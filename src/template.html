@@ -396,9 +396,10 @@ k auth can-i create pods --as=system:serviceaccount:dev:sa1 -n dev</pre></div>
    <button class="btn" id="tClose" title="Ẩn (phiên vẫn giữ)">✕</button>
   </div>
   <div class="stage">
-   <iframe id="tFrame" title="Terminal" allow="clipboard-read; clipboard-write"></iframe>
+   <iframe id="tFrame" title="Terminal" allow="local-network-access; local-network; loopback-network; clipboard-read; clipboard-write"></iframe>
    <div class="help" id="tHelpBox">
     <b>Kết nối terminal của VM vào trang này</b>
+    <p class="small" style="color:var(--warn)">Khung báo lỗi / trống? Bấm ↗ để mở terminal trong tab riêng: nếu tab đó cũng không vào được thì ttyd trên VM chưa chạy (xem bước 2); nếu tab đó chạy được thì bấm biểu tượng ổ khoá/cài đặt cạnh thanh địa chỉ của trang này → Site settings → bật <b>Local network access</b> (Truy cập mạng cục bộ), rồi bấm Kết nối lại.</p>
     <ol>
      <li>SSH vào VM: <code>ssh namhv25@192.168.64.5</code></li>
      <li>Chạy script cài web terminal (ttyd) trong repo:<pre id="tCmd">curl -fsSL https://raw.githubusercontent.com/namptit02/cka-8-tuan/main/scripts/setup-web-terminal.sh | bash</pre>
@@ -963,7 +964,7 @@ document.getElementById('lessonList').addEventListener('click',e=>{
 const T={url:store.get('turl','https://192.168.64.5:7681'),loaded:false};
 const $=id=>document.getElementById(id);
 function tSync(){$('tUrl').value=T.url;$('tNew').href=T.url;$('tAccept').href=T.url;$('tAccept').textContent=T.url}
-function tConnect(){T.url=$('tUrl').value.trim()||T.url;store.set('turl',T.url);tSync();$('tFrame').src=T.url;T.loaded=true;$('tHelpBox').style.display='none'}
+function tConnect(){T.url=$('tUrl').value.trim()||T.url;store.set('turl',T.url);tSync();$('tFrame').src='about:blank';setTimeout(()=>{$('tFrame').src=T.url},50);T.loaded=true;$('tHelpBox').style.display='none'}
 function tOpen(){document.body.classList.add('term-open');store.set('topen',true);if(!T.loaded&&store.get('tok',false))tConnect()}
 function tClose(){document.body.classList.remove('term-open');store.set('topen',false)}
 $('tOpen').onclick=tOpen;$('tClose').onclick=tClose;
