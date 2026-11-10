@@ -13,16 +13,27 @@ CERT_DIR="$HOME_DIR/.ttyd"
 
 echo "==> VM IP: $IP  port: $PORT  user: $RUN_USER"
 
+# 0. Đồng bộ đồng hồ (VM bị suspend hay lệch giờ -> apt báo "Release file ... is not valid yet")
+sudo timedatectl set-ntp true 2>/dev/null || true
+NET_DATE="$(curl -sI --max-time 10 http://www.google.com | awk -F': ' 'tolower($1)=="date"{print $2}' | tr -d '\r')"
+if [ -n "$NET_DATE" ]; then
+  DRIFT=$(( $(date -u +%s) - $(date -u -d "$NET_DATE" +%s) ))
+  if [ "${DRIFT#-}" -gt 120 ]; then
+    echo "==> Đồng hồ VM lệch ${DRIFT}s, chỉnh theo giờ mạng: $NET_DATE"
+    sudo date -u -s "$NET_DATE" >/dev/null
+  fi
+fi
+
 # 1. Cài ttyd (apt; nếu không có thì tải binary chính thức)
 if ! command -v ttyd >/dev/null 2>&1; then
-  sudo apt-get update -y
+  sudo apt-get update -y || echo "!! apt-get update có lỗi, vẫn thử cài tiếp"
   if ! sudo apt-get install -y ttyd; then
     ARCH="$(uname -m)"            # x86_64 | aarch64
     sudo curl -fL -o /usr/local/bin/ttyd "https://github.com/tsl0922/ttyd/releases/latest/download/ttyd.${ARCH}"
     sudo chmod +x /usr/local/bin/ttyd
   fi
 fi
-sudo apt-get install -y openssl >/dev/null
+command -v openssl >/dev/null || sudo apt-get install -y openssl
 TTYD_BIN="$(command -v ttyd)"
 "$TTYD_BIN" --version
 
