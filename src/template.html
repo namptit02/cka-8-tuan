@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CKA 8 tuần – Ôn thi Certified Kubernetes Administrator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0f1419;--panel:#161d25;--panel2:#1c2530;--line:#2a3542;--text:#e6edf3;--mute:#8b98a5;
+  --acc:#3fb9a3;--acc2:#5aa9ff;--warn:#f0b35a;--bad:#ef6f6c;--ok:#5cc47a;
+  --mono:'JetBrains Mono',ui-monospace,monospace;--sans:'Be Vietnam Pro',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.55}
+a{color:var(--acc2)}
+header{padding:20px 16px 8px;max-width:960px;margin:0 auto}
+header h1{margin:0;font-size:22px;letter-spacing:-.01em}
+header h1 span{color:var(--acc);font-family:var(--mono)}
+header p{margin:4px 0 0;color:var(--mute);font-size:13px}
+.progress{height:6px;background:var(--panel2);border-radius:4px;margin-top:12px;overflow:hidden}
+.progress>div{height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2));width:0;transition:width .3s}
+.ptext{font-size:12px;color:var(--mute);margin-top:4px;font-family:var(--mono)}
+nav{position:sticky;top:0;z-index:5;background:rgba(15,20,25,.95);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+nav .in{max-width:960px;margin:0 auto;display:flex;gap:4px;overflow-x:auto;padding:8px 12px;scrollbar-width:none}
+nav a{flex:none;text-decoration:none;color:var(--mute);padding:7px 12px;border-radius:8px;font-size:14px;font-weight:600;white-space:nowrap}
+nav a.on{background:var(--panel2);color:var(--text);box-shadow:inset 0 -2px 0 var(--acc)}
+main{max-width:960px;margin:0 auto;padding:16px}
+section{display:none}section.on{display:block}
+h2{font-size:19px;margin:8px 0 12px}
+h3{font-size:16px;margin:18px 0 8px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+.muted{color:var(--mute)}
+.small{font-size:13px}
+.tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--panel2);color:var(--mute);border:1px solid var(--line);margin-right:4px;font-family:var(--mono)}
+.t-arch{color:#c39bff;border-color:#4b3a6b}.t-work{color:var(--acc2);border-color:#2b4a6e}.t-net{color:var(--acc);border-color:#265a52}.t-sto{color:var(--warn);border-color:#6b5230}.t-ts{color:var(--bad);border-color:#6b3332}.t-lin{color:#ddd;border-color:#555}
+code,pre{font-family:var(--mono);font-size:13px}
+code{background:var(--panel2);padding:1px 5px;border-radius:4px}
+pre{background:#0b0f13;border:1px solid var(--line);border-radius:8px;padding:12px;overflow-x:auto;margin:8px 0;line-height:1.5;white-space:pre}
+.weights{display:grid;gap:8px}
+.w{display:grid;grid-template-columns:1fr 46px;gap:8px;align-items:center}
+.w .bar{height:22px;background:var(--panel2);border-radius:6px;position:relative;overflow:hidden}
+.w .bar i{position:absolute;inset:0 auto 0 0;border-radius:6px}
+.w .bar b{position:relative;font-size:12px;padding-left:8px;line-height:22px;font-weight:600}
+.w .pct{font-family:var(--mono);text-align:right;font-weight:600}
+.week{border-left:3px solid var(--line)}
+.week.done{border-left-color:var(--ok)}
+.week h3{margin:0 0 4px;display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.week h3 small{font-family:var(--mono);color:var(--mute);font-weight:400;font-size:12px}
+label.chk{display:flex;gap:10px;align-items:flex-start;padding:6px 0;cursor:pointer}
+label.chk input{margin-top:4px;accent-color:var(--acc);width:17px;height:17px;flex:none}
+label.chk input:checked+span{color:var(--mute);text-decoration:line-through}
+.grid2{display:grid;grid-template-columns:1fr;gap:12px}
+@media(min-width:720px){.grid2{grid-template-columns:1fr 1fr}}
+.verdict{border-left:3px solid var(--acc);padding-left:12px}
+ul.tight{margin:6px 0;padding-left:20px}ul.tight li{margin:3px 0}
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.btn{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:7px 12px;font:600 13px var(--sans);cursor:pointer}
+.btn.on,.btn.pri{background:var(--acc);color:#04201b;border-color:var(--acc)}
+.btn:active{transform:translateY(1px)}
+.lab .head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.lab .q{margin:8px 0}
+.lab details summary{cursor:pointer;color:var(--acc2);font-weight:600;font-size:13px;margin-top:6px}
+.lab.done{opacity:.6}
+.donebtn{flex:none;font-size:12px;padding:4px 10px}
+.flash{min-height:220px;display:flex;flex-direction:column;justify-content:center;text-align:center;cursor:pointer;user-select:none;padding:24px}
+.flash .side{font-size:12px;color:var(--mute);font-family:var(--mono);margin-bottom:10px}
+.flash .txt{font-size:17px;font-weight:600}
+.flash .ans{text-align:left;font-size:14px;font-weight:400}
+.flash .ans pre{text-align:left}
+.row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:10px}
+.timer{font:600 44px var(--mono);text-align:center;letter-spacing:.04em;margin:6px 0}
+.timer.low{color:var(--bad)}
+.mocklist .item{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line)}
+.mocklist .item:last-child{border:0}
+.mocklist .n{font-family:var(--mono);color:var(--mute);width:24px;flex:none}
+.score{font:600 20px var(--mono);text-align:center}
+table{width:100%;border-collapse:collapse;font-size:13px}
+td,th{border-bottom:1px solid var(--line);padding:7px 6px;text-align:left;vertical-align:top}
+th{color:var(--mute);font-weight:600}
+td code{white-space:nowrap}
+.tblwrap{overflow-x:auto}
+.lesson{padding:0;overflow:hidden}
+.lesson>summary{list-style:none;cursor:pointer;padding:14px;display:flex;gap:10px;align-items:center}
+.lesson>summary::-webkit-details-marker{display:none}
+.lesson>summary .num{font:600 12px var(--mono);color:var(--mute);flex:none;width:28px}
+.lesson>summary .tt{flex:1;font-weight:600}
+.lesson>summary .meta{font:12px var(--mono);color:var(--mute);flex:none}
+.lesson>summary .ck{flex:none;width:22px;height:22px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:12px}
+.lesson.done>summary .ck{background:var(--ok);border-color:var(--ok);color:#06210f}
+.lesson[open]>summary{border-bottom:1px solid var(--line);background:var(--panel2)}
+.lbody{padding:6px 14px 14px}
+.lbody h2{font-size:16px;margin:20px 0 8px;color:var(--acc)}
+.lbody h3{font-size:15px}
+.lbody p,.lbody li{font-size:14.5px}
+.lbody ul,.lbody ol{padding-left:20px}
+.lbody table{margin:8px 0;display:block;overflow-x:auto}
+.lbody td code{white-space:normal;word-break:break-word}
+.lbody pre code{background:none;padding:0}
+.ex{background:#121a22;border:1px solid #2b4a6e;border-left:3px solid var(--acc2);border-radius:10px;padding:10px 12px;margin:14px 0}
+.exh{font:700 12px var(--mono);color:var(--acc2);text-transform:uppercase;letter-spacing:.05em}
+.ex p:first-of-type{margin-top:6px}
+.ex details summary{cursor:pointer;color:var(--acc);font-weight:600;font-size:13px;margin-top:4px}
+.ldone{margin-top:12px;width:100%}
+.wkhead{margin:4px 0 12px}
+.wkhead h2{margin:0}
+.golink{display:inline-block;margin-top:8px;font-weight:600;font-size:13px;text-decoration:none}
+footer{max-width:960px;margin:0 auto;padding:12px 16px 40px;color:var(--mute);font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <h1><span>$ kubectl</span> ôn CKA 8 tuần</h1>
+  <p>Đề thi hiện tại: Kubernetes v1.35 · 2 giờ · thực hành 100% trên terminal · đỗ từ 66%</p>
+  <div class="progress"><div id="pbar"></div></div>
+  <div class="ptext" id="ptext"></div>
+</header>
+<nav><div class="in" id="nav">
+  <a href="#lo-trinh">Lộ trình</a>
+  <a href="#bai-hoc">Bài học</a>
+  <a href="#nen-tang">Linux &amp; Docker</a>
+  <a href="#lab">Bài lab</a>
+  <a href="#flashcard">Flashcard</a>
+  <a href="#cheatsheet">Cheatsheet</a>
+  <a href="#thi-thu">Thi thử</a>
+</div></nav>
+
+<main>
+<!-- ============ LỘ TRÌNH ============ -->
+<section id="lo-trinh">
+  <div class="card">
+    <h2 style="margin-top:0">Trọng số đề thi</h2>
+    <div class="weights" id="weights"></div>
+    <p class="small muted" style="margin-bottom:0">Troubleshooting + Cluster Architecture chiếm 55% → dành thời gian nhiều nhất cho 2 phần này. Kiểm tra lại trang đề thi chính thức của Linux Foundation trước khi đăng ký vì version K8s đổi theo bản phát hành.</p>
+  </div>
+  <div class="card">
+    <h2 style="margin-top:0;font-size:17px">Tài liệu nên dùng</h2>
+    <ul class="tight small">
+      <li><b>KodeKloud – CKA Certification Course</b> (học chính): video + lab trên trình duyệt sau mỗi bài, Lightning Labs, 3 mock exam. <a href="https://learn.kodekloud.com/user/courses/cka-certification-course-certified-kubernetes-administrator">Mở khoá học</a></li>
+      <li><b>KodeKloud – Ultimate CKA Mock Exam Series</b>: đề thi thử khó hơn, nhiều cluster, dùng ở tuần 8 nếu còn thời gian.</li>
+      <li><b>Killercoda</b>: playground và kịch bản CKA miễn phí, tập thêm khi hết lab KodeKloud. <a href="https://killercoda.com/killer-shell-cka">killercoda.com</a></li>
+      <li><b>killer.sh</b>: 2 lượt mô phỏng đi kèm khi mua đề thi, khó hơn đề thật.</li>
+      <li><b>kubernetes.io/docs</b>: tài liệu duy nhất được mở trong phòng thi, tập tra cứu từ tuần 2.</li>
+    </ul>
+    <p class="small muted" style="margin:0">Mỗi tuần dưới đây ghi phần KodeKloud tương ứng (▶). Xem video xong làm ngay lab của KodeKloud, rồi làm các bài ở tab “Bài lab”.</p>
+  </div>
+  <p class="muted small">Mỗi ngày khoảng 1,5–2 giờ, chủ yếu gõ lệnh chứ không chỉ xem video. Đánh dấu khi xong, tiến độ được lưu trên trình duyệt này.</p>
+  <div id="weeks"></div>
+</section>
+
+<!-- ============ BÀI HỌC ============ -->
+<section id="bai-hoc">
+  <div class="filters" id="weekTabs"></div>
+  <div id="weekHead"></div>
+  <div id="lessonList"></div>
+  <div class="row" id="weekNav"></div>
+</section>
+
+<!-- ============ NỀN TẢNG ============ -->
+<section id="nen-tang">
+  <div class="card verdict">
+    <h2 style="margin-top:0">Có cần học Linux và Docker không?</h2>
+    <p><b>Linux: CÓ, bắt buộc.</b> Cả bài thi chạy trên terminal Ubuntu. Nhiều câu yêu cầu SSH vào node, sửa file YAML bằng vim, xem log kubelet bằng <code>journalctl</code>, khởi động lại service bằng <code>systemctl</code>. Yếu Linux là mất điểm phần Troubleshooting (30%).</p>
+    <p style="margin-bottom:0"><b>Docker: CHỈ CẦN KHÁI NIỆM, 1–2 ngày.</b> K8s dùng containerd chứ không dùng Docker nữa, đề không bắt viết Dockerfile. Bạn cần hiểu image, container, registry, tag và biết dùng <code>crictl</code> để xem container trên node. Đề mới có thể bắt cài <code>cri-dockerd</code> từ file .deb, nhưng đó là thao tác Linux (dpkg, systemctl), không phải kiến thức Docker sâu.</p>
+    <a class="golink" href="#tuan-1">📖 Lý thuyết đầy đủ + bài tập Linux &amp; Docker: Bài học tuần 1 →</a>
+  </div>
+
+  <h3>Linux – tối thiểu phải thành thạo</h3>
+  <div class="grid2">
+    <div class="card"><b>Vim (quan trọng nhất)</b>
+      <ul class="tight small">
+        <li><code>i</code> chèn · <code>Esc</code> thoát · <code>:wq</code> lưu thoát · <code>:q!</code> bỏ</li>
+        <li><code>dd</code> xoá dòng · <code>yy</code> copy · <code>p</code> dán · <code>u</code> undo</li>
+        <li><code>/từ</code> tìm · <code>n</code> tiếp · <code>:set nu</code> số dòng</li>
+        <li>Thụt lề nhiều dòng: <code>Shift+V</code> chọn → <code>&gt;</code> hoặc <code>&lt;</code></li>
+        <li>Cài sẵn <code>~/.vimrc</code>: <code>set ts=2 sw=2 et</code> để YAML không lỗi tab</li>
+      </ul></div>
+    <div class="card"><b>systemd &amp; log</b>
+      <ul class="tight small">
+        <li><code>systemctl status|start|restart|enable kubelet</code></li>
+        <li><code>systemctl daemon-reload</code> sau khi sửa unit file</li>
+        <li><code>journalctl -u kubelet -f</code> · <code>--no-pager | tail -50</code></li>
+        <li>Log container trên node: <code>/var/log/pods/</code>, <code>/var/log/containers/</code></li>
+      </ul></div>
+    <div class="card"><b>File, quyền, tìm kiếm</b>
+      <ul class="tight small">
+        <li><code>ls -la</code>, <code>cat</code>, <code>less</code>, <code>head</code>, <code>tail</code></li>
+        <li><code>chmod</code>, <code>chown</code>, <code>sudo -i</code></li>
+        <li><code>grep -rn</code>, <code>find / -name</code>, <code>awk '{print $1}'</code></li>
+        <li>Pipe &amp; redirect: <code>|</code>, <code>&gt;</code>, <code>&gt;&gt;</code>, <code>2&gt;&amp;1</code></li>
+        <li><code>base64 -d</code> (giải mã Secret)</li>
+      </ul></div>
+    <div class="card"><b>Mạng</b>
+      <ul class="tight small">
+        <li><code>ip a</code>, <code>ip route</code>, <code>ss -tlnp</code> (port đang nghe)</li>
+        <li><code>curl -v</code>, <code>nslookup</code>/<code>dig</code>, <code>ping</code>, <code>nc -zv host port</code></li>
+        <li><code>sysctl</code>, file <code>/etc/sysctl.d/*.conf</code>, <code>sysctl --system</code></li>
+        <li>Hiểu IP, subnet/CIDR, DNS, port, iptables ở mức khái niệm</li>
+      </ul></div>
+    <div class="card"><b>Gói phần mềm (cho upgrade cluster)</b>
+      <ul class="tight small">
+        <li><code>apt-get update</code>, <code>apt-cache madison kubeadm</code></li>
+        <li><code>apt-mark hold|unhold</code>, <code>apt-get install pkg=version</code></li>
+        <li><code>dpkg -i file.deb</code></li>
+      </ul></div>
+    <div class="card"><b>File K8s trên node cần nhớ</b>
+      <ul class="tight small">
+        <li><code>/etc/kubernetes/manifests/</code> – static pod control plane</li>
+        <li><code>/etc/kubernetes/pki/</code> – chứng chỉ (cả etcd)</li>
+        <li><code>/var/lib/kubelet/config.yaml</code> – cấu hình kubelet</li>
+        <li><code>/etc/kubernetes/kubelet.conf</code>, <code>admin.conf</code></li>
+        <li><code>/etc/cni/net.d/</code> – cấu hình CNI</li>
+      </ul></div>
+  </div>
+
+  <h3>Container / Docker – chỉ cần thế này</h3>
+  <div class="grid2">
+    <div class="card"><b>Khái niệm</b>
+      <ul class="tight small">
+        <li>Image (template, nhiều layer) vs container (process đang chạy từ image)</li>
+        <li>Registry, tag: <code>nginx:1.27</code>, <code>registry.io/app:v2</code></li>
+        <li>Namespace &amp; cgroup của Linux là nền tảng cách ly / giới hạn CPU-RAM</li>
+        <li>CRI: kubelet nói chuyện với containerd/CRI-O qua socket, Docker cần cri-dockerd</li>
+        <li>Port mapping, biến môi trường, volume mount</li>
+      </ul></div>
+    <div class="card"><b>crictl (dùng trên node khi debug)</b>
+<pre>crictl ps -a            # container, kể cả đã chết
+crictl pods
+crictl logs &lt;id&gt;
+crictl images
+crictl inspect &lt;id&gt;</pre>
+      <p class="small muted" style="margin:0">Dùng khi kube-apiserver chết và <code>kubectl</code> không chạy.</p></div>
+  </div>
+
+  <div class="card">
+    <b>Tự kiểm tra trước khi sang Kubernetes</b>
+    <div id="prereqChecks"></div>
+  </div>
+</section>
+
+<!-- ============ LAB ============ -->
+<section id="lab">
+  <h2>Bài lab theo kiểu đề thi</h2>
+  <p class="muted small">Tự làm trên cluster của bạn (killercoda.com có playground CKA miễn phí, hoặc kind/kubeadm trên VM). Bí quá mới mở lời giải.</p>
+  <div class="filters" id="labFilters"></div>
+  <div id="labs"></div>
+</section>
+
+<!-- ============ FLASHCARD ============ -->
+<section id="flashcard">
+  <h2>Flashcard</h2>
+  <div class="filters" id="fcFilters"></div>
+  <div class="card flash" id="fcCard"></div>
+  <div class="row">
+    <button class="btn" id="fcPrev">← Trước</button>
+    <button class="btn" id="fcFlip">Lật thẻ</button>
+    <button class="btn" id="fcNext">Tiếp →</button>
+    <button class="btn" id="fcShuf">Xáo trộn</button>
+  </div>
+  <p class="ptext" id="fcCount" style="text-align:center"></p>
+</section>
+
+<!-- ============ CHEATSHEET ============ -->
+<section id="cheatsheet">
+  <h2>Cheatsheet</h2>
+  <div class="card">
+    <b>Chuẩn bị 30 giây đầu giờ thi</b>
+<pre>alias k=kubectl                       # thường đã có sẵn
+export do="--dry-run=client -o yaml"   # k run x --image=nginx $do > x.yaml
+export now="--force --grace-period=0"  # k delete pod x $now
+echo 'set ts=2 sw=2 et' >> ~/.vimrc</pre>
+    <p class="small" style="margin:0"><b>Mỗi câu đều có lệnh đổi context ở đầu</b> (<code>kubectl config use-context ...</code>). Quên chạy là làm nhầm cluster, mất trắng điểm câu đó.</p>
+  </div>
+  <div class="card tblwrap"><b>Tạo nhanh bằng lệnh (imperative)</b>
+    <table id="cheatTbl"></table></div>
+  <div class="card"><b>Tra cứu &amp; lọc</b>
+<pre>k get po -A -o wide --show-labels
+k get po -l app=web -n prod
+k get po --sort-by=.metadata.creationTimestamp
+k get po -o jsonpath='{.items[*].spec.nodeName}'
+k get nodes -o custom-columns=NAME:.metadata.name,IP:.status.addresses[0].address
+k describe po x | grep -i -A10 events
+k get events -n prod --sort-by=.lastTimestamp
+k top nodes ; k top po -A --sort-by=memory
+k explain deploy.spec.strategy --recursive
+k api-resources --namespaced=true
+k auth can-i create pods --as=system:serviceaccount:dev:sa1 -n dev</pre></div>
+  <div class="card"><b>Mẹo làm bài</b>
+    <ul class="tight small">
+      <li>Được mở kubernetes.io/docs, /blog, helm.sh/docs, gateway-api.sigs.k8s.io trong bài thi. Tập tìm YAML mẫu nhanh trên docs.</li>
+      <li>Câu nào quá 7–8 phút thì <b>flag</b> rồi bỏ qua, quay lại sau. ~15–17 câu trong 120 phút.</li>
+      <li>Copy/paste trong terminal thi: <code>Ctrl+Shift+C</code> / <code>Ctrl+Shift+V</code>.</li>
+      <li>Câu bắt SSH vào node: nhớ <code>exit</code> về máy chính trước khi sang câu tiếp.</li>
+      <li>Câu bắt ghi kết quả ra file: kiểm tra lại đúng đường dẫn, đúng định dạng.</li>
+      <li>Có quyền 2 lượt killer.sh khi mua đề, khó hơn đề thật. Dùng ở tuần 7 và tuần 8.</li>
+    </ul></div>
+</section>
+
+<!-- ============ THI THỬ ============ -->
+<section id="thi-thu">
+  <h2>Thi thử 2 giờ</h2>
+  <div class="card">
+    <p class="small muted" style="margin-top:0">Lấy ngẫu nhiên 16 bài lab, phân bổ theo trọng số đề thật. Đặt đồng hồ, làm trên cluster của bạn, tự chấm khi xong.</p>
+    <div class="timer" id="timer">2:00:00</div>
+    <div class="row">
+      <button class="btn pri" id="mkNew">Tạo đề mới</button>
+      <button class="btn" id="mkStart">Bắt đầu</button>
+      <button class="btn" id="mkPause">Tạm dừng</button>
+    </div>
+    <div class="score" id="mkScore" style="margin-top:10px"></div>
+  </div>
+  <div class="card mocklist" id="mkList"><p class="muted small" style="margin:0">Bấm “Tạo đề mới”.</p></div>
+</section>
+</main>
+<footer>Trang ôn tập cá nhân. Nội dung bám theo đề cương CKA hiện hành (5 domain); kiểm tra lại trang chính thức của Linux Foundation gần ngày thi.</footer>
+
+<script>
+/*LESSONS*/
+const DOM={arch:{n:'Cluster Architecture, Installation & Config',w:25,c:'#c39bff',t:'t-arch',s:'Kiến trúc'},
+ts:{n:'Troubleshooting',w:30,c:'#ef6f6c',t:'t-ts',s:'Troubleshoot'},
+net:{n:'Services & Networking',w:20,c:'#3fb9a3',t:'t-net',s:'Mạng'},
+work:{n:'Workloads & Scheduling',w:15,c:'#5aa9ff',t:'t-work',s:'Workload'},
+sto:{n:'Storage',w:10,c:'#f0b35a',t:'t-sto',s:'Storage'},
+lin:{n:'Linux',w:0,c:'#ddd',t:'t-lin',s:'Linux'}};
+
+const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const store={get(k,d){try{const v=localStorage.getItem('cka_'+k);return v?JSON.parse(v):d}catch(e){return d}},
+ set(k,v){try{localStorage.setItem('cka_'+k,JSON.stringify(v))}catch(e){}}};
+let state=store.get('state',{plan:{},labs:{},pre:{}});
+state.les=state.les||{};
+const save=()=>{store.set('state',state);updateProgress()};
+
+/* ---------- PLAN ---------- */
+const WEEKS=[
+{t:'Tuần 1 – Linux, container, dựng lab',kk:'KodeKloud: khoá Linux Basics + Docker for the Absolute Beginner (chỉ phần cơ bản); CKA: Core Concepts',d:'Nền móng. Đừng bỏ qua dù đã biết sơ sơ.',items:[
+ 'Ôn vim tới mức sửa YAML không cần nghĩ (vimtutor 2 lần)',
+ 'systemctl, journalctl, grep/awk, ip/ss/curl, sysctl – làm hết checklist ở tab Linux & Docker',
+ 'Docker/containerd: image, container, registry, chạy thử crictl ps/logs',
+ 'Dựng cluster: killercoda playground + kubeadm 1 control plane + 1 worker trên 2 VM',
+ 'Đọc tổng quan kiến trúc: apiserver, etcd, scheduler, controller-manager, kubelet, kube-proxy, CoreDNS']},
+{t:'Tuần 2 – kubectl & Pod, Deployment',kk:'KodeKloud CKA: Core Concepts (hết) + Application Lifecycle Management (phần Rolling Updates)',d:'Gõ imperative cho nhanh, dùng $do để sinh YAML.',items:[
+ 'Pod, label/selector, namespace, kubectl run/create/expose với --dry-run=client -o yaml',
+ 'Deployment, ReplicaSet, rollout status/history/undo, scale, chiến lược RollingUpdate',
+ 'jsonpath, custom-columns, --sort-by, kubectl explain',
+ 'Làm toàn bộ lab Workload mức dễ']},
+{t:'Tuần 3 – Workloads & Scheduling (15%)',kk:'KodeKloud CKA: Scheduling + Logging & Monitoring + Application Lifecycle Management',d:'',items:[
+ 'ConfigMap, Secret (env, envFrom, volume)',
+ 'requests/limits, LimitRange, ResourceQuota, PriorityClass',
+ 'Probe: liveness/readiness/startup; HPA autoscaling/v2',
+ 'nodeSelector, node affinity, taint/toleration, DaemonSet, Job/CronJob',
+ 'Sidecar container (initContainers + restartPolicy: Always), init container']},
+{t:'Tuần 4 – Services & Networking (20%)',kk:'KodeKloud CKA: Networking (CNI, DNS, Ingress, Gateway API) + phần NetworkPolicy trong Security',d:'',items:[
+ 'Service ClusterIP/NodePort/LoadBalancer, Endpoints/EndpointSlice, DNS svc.ns.svc.cluster.local',
+ 'CoreDNS: ConfigMap Corefile, debug bằng pod busybox nslookup',
+ 'NetworkPolicy: default deny, ingress/egress, podSelector + namespaceSelector',
+ 'Ingress + IngressClass; Gateway API: GatewayClass, Gateway, HTTPRoute',
+ 'CNI: cài Calico hoặc Cilium từ manifest/Helm, hiểu Pod CIDR']},
+{t:'Tuần 5 – Storage (10%) + Cluster Arch phần 1',kk:'KodeKloud CKA: Storage + Security (RBAC, SA) + Helm Basics + Kustomize Basics',d:'',items:[
+ 'PV, PVC, StorageClass, access modes, reclaimPolicy, volumeBindingMode, SC mặc định',
+ 'RBAC: Role/ClusterRole, Binding, ServiceAccount, kubectl auth can-i',
+ 'Helm: repo add, install/upgrade/uninstall, --set, values.yaml, helm template',
+ 'Kustomize: kubectl apply -k, overlays, patches',
+ 'CRD & Operator: kubectl get crd, explain custom resource (vd cert-manager)']},
+{t:'Tuần 6 – Cluster Arch phần 2 (25%)',kk:'KodeKloud CKA: Cluster Maintenance + Design & Install a Cluster + Install the kubeadm way',d:'Phần “chỉ CKA mới có”.',items:[
+ 'kubeadm init / join, token create --print-join-command',
+ 'Upgrade cluster bằng kubeadm (control plane rồi worker), drain/uncordon',
+ 'etcd snapshot save/restore, sửa etcd.yaml trỏ data-dir mới',
+ 'Cài cri-dockerd từ .deb, bật service, set sysctl cho K8s',
+ 'Khái niệm HA control plane, kubeconfig, chứng chỉ (kubeadm certs check-expiration)']},
+{t:'Tuần 7 – Troubleshooting (30%)',kk:'KodeKloud CKA: Troubleshooting + Other Topics (JSONPath) + Lightning Labs',d:'Domain nặng nhất. Tự phá cluster rồi sửa.',items:[
+ 'Node NotReady: kubelet stop, sai config, sai đường dẫn cert → sửa bằng journalctl',
+ 'Control plane chết: sửa lỗi trong /etc/kubernetes/manifests/kube-apiserver.yaml, dùng crictl',
+ 'App: CrashLoopBackOff, ImagePullBackOff, Pending (thiếu tài nguyên, taint), logs --previous',
+ 'Service không có endpoint (sai selector/port), DNS lỗi, NetworkPolicy chặn',
+ 'killer.sh lượt 1 – ghi lại mọi câu sai']},
+{t:'Tuần 8 – Thi thử & tăng tốc',kk:'KodeKloud CKA: 3 Mock Exam cuối khoá; muốn thêm thì Ultimate CKA Mock Exam Series',d:'',items:[
+ 'Làm 2 đề thi thử 2 giờ ở tab Thi thử',
+ 'killer.sh lượt 2, mục tiêu > 80%',
+ 'Ôn lại câu sai, flashcard mỗi ngày',
+ 'Kiểm tra máy, webcam, phòng, giấy tờ tuỳ thân; chạy system check của PSI',
+ 'Ngày trước khi thi: nghỉ, không học thêm nội dung mới']}];
+
+function renderWeights(){
+ document.getElementById('weights').innerHTML=['ts','arch','net','work','sto'].map(k=>{const d=DOM[k];
+ return `<div class="w"><div class="bar"><i style="width:${d.w/30*100}%;background:${d.c}33;border-right:3px solid ${d.c}"></i><b>${d.n}</b></div><div class="pct">${d.w}%</div></div>`}).join('');
+}
+function renderWeeks(){
+ document.getElementById('weeks').innerHTML=WEEKS.map((w,i)=>{
+  const done=w.items.filter((_,j)=>state.plan[i+'-'+j]).length;
+  return `<div class="card week ${done===w.items.length?'done':''}"><h3>${w.t}<small>${done}/${w.items.length}</small></h3>${w.d?`<div class="small muted">${w.d}</div>`:''}<div class="small" style="color:var(--acc);margin-top:4px">▶ ${w.kk}</div>
+  <a class="golink" href="#tuan-${i+1}">📖 Học lý thuyết &amp; bài tập tuần ${i+1} (${LESSONS.filter(l=>l.w===i+1).length} bài) →</a>
+  ${w.items.map((it,j)=>`<label class="chk"><input type="checkbox" data-p="${i}-${j}" ${state.plan[i+'-'+j]?'checked':''}><span>${esc(it)}</span></label>`).join('')}</div>`}).join('');
+}
+document.getElementById('weeks').addEventListener('change',e=>{const k=e.target.dataset.p;if(!k)return;state.plan[k]=e.target.checked;save();renderWeeks()});
+
+/* ---------- PREREQ ---------- */
+const PRE=['Mở file, sửa, lưu YAML bằng vim mà không lỗi thụt lề',
+'Dùng systemctl để xem trạng thái và restart một service',
+'Đọc log một service bằng journalctl, lọc lỗi bằng grep',
+'Biết port nào đang mở trên máy (ss -tlnp)',
+'Dùng curl kiểm tra một HTTP endpoint, nslookup một tên miền',
+'Giải thích được image khác container thế nào',
+'Liệt kê container trên node bằng crictl ps',
+'Cài một file .deb, hold/unhold gói apt'];
+function renderPre(){document.getElementById('prereqChecks').innerHTML=PRE.map((p,i)=>`<label class="chk"><input type="checkbox" data-q="${i}" ${state.pre[i]?'checked':''}><span>${p}</span></label>`).join('')}
+document.getElementById('prereqChecks').addEventListener('change',e=>{const k=e.target.dataset.q;if(k==null)return;state.pre[k]=e.target.checked;save()});
+
+/* ---------- LABS ---------- */
+const LABS=[
+// Linux
+{d:'lin',q:'Trên node01, kubelet không chạy. Kiểm tra trạng thái, xem 30 dòng log cuối, bật lại và cho tự khởi động khi boot.',a:`ssh node01
+sudo -i
+systemctl status kubelet
+journalctl -u kubelet --no-pager | tail -30
+systemctl enable --now kubelet
+systemctl status kubelet`},
+{d:'lin',q:'Bật IP forwarding và bridge-nf-call-iptables vĩnh viễn trên node (giữ sau reboot).',a:`cat <<EOF > /etc/sysctl.d/k8s.conf
+net.ipv4.ip_forward = 1
+net.bridge.bridge-nf-call-iptables = 1
+EOF
+modprobe br_netfilter
+sysctl --system
+sysctl net.ipv4.ip_forward`},
+// Cluster arch
+{d:'arch',q:'Tạo ServiceAccount "deployer" ở namespace "app". Cho phép nó chỉ create/list/update Deployments trong namespace đó. Kiểm tra quyền.',a:`k create ns app
+k create sa deployer -n app
+k create role deployer-role -n app --verb=create,list,update --resource=deployments
+k create rolebinding deployer-rb -n app --role=deployer-role --serviceaccount=app:deployer
+k auth can-i create deployments -n app --as=system:serviceaccount:app:deployer   # yes
+k auth can-i delete deployments -n app --as=system:serviceaccount:app:deployer   # no`},
+{d:'arch',q:'Tạo ClusterRole cho phép get/list nodes và gán cho user "audit" ở mức cluster.',a:`k create clusterrole node-reader --verb=get,list --resource=nodes
+k create clusterrolebinding audit-nodes --clusterrole=node-reader --user=audit
+k auth can-i list nodes --as=audit`},
+{d:'arch',q:'Backup etcd ra /opt/etcd-backup.db. Sau đó restore từ file đó vào /var/lib/etcd-restore.',a:`# Lấy đường dẫn cert trong /etc/kubernetes/manifests/etcd.yaml
+ETCDCTL_API=3 etcdctl --endpoints=https://127.0.0.1:2379 \\
+  --cacert=/etc/kubernetes/pki/etcd/ca.crt \\
+  --cert=/etc/kubernetes/pki/etcd/server.crt \\
+  --key=/etc/kubernetes/pki/etcd/server.key \\
+  snapshot save /opt/etcd-backup.db
+
+# Restore (etcdutl là công cụ khuyến nghị cho restore)
+etcdutl snapshot restore /opt/etcd-backup.db --data-dir /var/lib/etcd-restore
+
+# Sửa volume hostPath "etcd-data" trong /etc/kubernetes/manifests/etcd.yaml
+#   path: /var/lib/etcd  ->  path: /var/lib/etcd-restore
+# Đợi static pod etcd khởi động lại (crictl ps | grep etcd), rồi k get po -A`},
+{d:'arch',q:'Upgrade control plane từ 1.35.x lên bản patch/minor tiếp theo bằng kubeadm, rồi upgrade kubelet trên node đó.',a:`# Nếu lên minor mới: sửa /etc/apt/sources.list.d/kubernetes.list sang repo minor mới (pkgs.k8s.io)
+apt-get update && apt-cache madison kubeadm
+apt-mark unhold kubeadm && apt-get install -y kubeadm='1.35.X-*' && apt-mark hold kubeadm
+kubeadm upgrade plan
+kubeadm upgrade apply v1.35.X
+k drain controlplane --ignore-daemonsets
+apt-mark unhold kubelet kubectl && apt-get install -y kubelet='1.35.X-*' kubectl='1.35.X-*' && apt-mark hold kubelet kubectl
+systemctl daemon-reload && systemctl restart kubelet
+k uncordon controlplane
+# Worker: kubeadm upgrade node (thay vì apply), còn lại giống hệt`},
+{d:'arch',q:'Cài chart nginx từ repo bitnami thành release "web" ở namespace "web" (tạo nếu chưa có), đặt replicaCount=2. Liệt kê release.',a:`helm repo add bitnami https://charts.bitnami.com/bitnami
+helm repo update
+helm search repo bitnami/nginx
+helm install web bitnami/nginx -n web --create-namespace --set replicaCount=2
+helm list -A
+# Xem giá trị mặc định: helm show values bitnami/nginx | less
+# Chỉ sinh manifest: helm template web bitnami/nginx > web.yaml`},
+{d:'arch',q:'Có thư mục /opt/kustomize/overlays/prod. Xem manifest được sinh ra và apply nó.',a:`k kustomize /opt/kustomize/overlays/prod
+k apply -k /opt/kustomize/overlays/prod`},
+{d:'arch',q:'Ghi danh sách mọi CRD của cert-manager vào /root/crds.txt. Ghi tài liệu của trường spec.subject của Certificate vào /root/subject.txt.',a:`k get crd | grep cert-manager > /root/crds.txt
+k explain certificate.spec.subject > /root/subject.txt`},
+{d:'arch',q:'Cài cri-dockerd từ /root/cri-dockerd.deb, bật và cho service cri-docker chạy cùng boot.',a:`dpkg -i /root/cri-dockerd.deb
+systemctl enable --now cri-docker.service
+systemctl status cri-docker.service`},
+{d:'arch',q:'In lệnh join để thêm một worker mới vào cluster.',a:`kubeadm token create --print-join-command
+# Chạy lệnh in ra trên worker (với sudo)`},
+{d:'arch',q:'Cài CNI hỗ trợ NetworkPolicy (Calico) bằng manifest của tigera-operator; pod CIDR là 192.168.0.0/16.',a:`k create -f https://raw.githubusercontent.com/projectcalico/calico/<VERSION>/manifests/tigera-operator.yaml
+# Tải custom-resources.yaml, kiểm tra cidr trùng pod CIDR của cluster:
+#   k cluster-info dump | grep -m1 cluster-cidr
+k create -f custom-resources.yaml
+k get po -n calico-system -w`},
+// Workloads
+{d:'work',q:'Tạo deployment "web" image nginx:1.27, 3 replica. Update lên nginx:1.28, xem lịch sử, rồi rollback.',a:`k create deploy web --image=nginx:1.27 --replicas=3
+k set image deploy/web nginx=nginx:1.28
+k rollout status deploy/web
+k rollout history deploy/web
+k rollout undo deploy/web`},
+{d:'work',q:'Tạo ConfigMap "app-cfg" có MODE=prod và Secret "app-sec" có PASS=s3cr3t. Tạo pod "app" image busybox dùng cả hai làm biến môi trường, lệnh sleep 3600.',a:`k create cm app-cfg --from-literal=MODE=prod
+k create secret generic app-sec --from-literal=PASS=s3cr3t
+k run app --image=busybox $do --command -- sleep 3600 > app.yaml
+# Thêm vào container:
+    envFrom:
+    - configMapRef: {name: app-cfg}
+    - secretRef: {name: app-sec}
+k apply -f app.yaml
+k exec app -- env | grep -E 'MODE|PASS'`},
+{d:'work',q:'Tạo HPA cho deployment "web": CPU 50%, min 1, max 5, scale down ổn định 30 giây.',a:`apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: web
+spec:
+  scaleTargetRef: {apiVersion: apps/v1, kind: Deployment, name: web}
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target: {type: Utilization, averageUtilization: 50}
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 30
+# Deployment phải có requests.cpu thì HPA mới tính được %`},
+{d:'work',q:'Taint node01 bằng key=gpu:NoSchedule. Tạo pod "gpu-job" chỉ chạy được trên node01.',a:`k taint node node01 key=gpu:NoSchedule
+k label node node01 hw=gpu
+# Pod spec:
+spec:
+  nodeSelector: {hw: gpu}
+  tolerations:
+  - key: key
+    operator: Equal
+    value: gpu
+    effect: NoSchedule
+# Gỡ taint: k taint node node01 key=gpu:NoSchedule-`},
+{d:'work',q:'Thêm sidecar "log" (busybox, tail -F /var/log/app.log) vào deployment "app" chia sẻ volume emptyDir tại /var/log, dùng kiểu sidecar native.',a:`spec:
+  template:
+    spec:
+      volumes:
+      - name: logs
+        emptyDir: {}
+      initContainers:
+      - name: log
+        image: busybox
+        restartPolicy: Always        # => native sidecar
+        command: ["sh","-c","tail -F /var/log/app.log"]
+        volumeMounts: [{name: logs, mountPath: /var/log}]
+      containers:
+      - name: app
+        ...
+        volumeMounts: [{name: logs, mountPath: /var/log}]`},
+{d:'work',q:'Tạo PriorityClass "high" value 1000000 và gán cho deployment "critical".',a:`k create priorityclass high --value=1000000 --description="critical apps"
+k patch deploy critical -p '{"spec":{"template":{"spec":{"priorityClassName":"high"}}}}'`},
+{d:'work',q:'Đặt requests cpu=100m, memory=128Mi và limits memory=256Mi cho deployment "web".',a:`k set resources deploy web --requests=cpu=100m,memory=128Mi --limits=memory=256Mi`},
+{d:'work',q:'Tạo CronJob "cleanup" chạy mỗi 5 phút, image busybox, in "done"; giữ 2 job thành công gần nhất.',a:`k create cronjob cleanup --image=busybox --schedule="*/5 * * * *" -- echo done
+k patch cronjob cleanup -p '{"spec":{"successfulJobsHistoryLimit":2}}'`},
+// Networking
+{d:'net',q:'Expose deployment "web" ra NodePort 30080, port 80.',a:`k expose deploy web --type=NodePort --port=80 --target-port=80 --name=web-np $do > svc.yaml
+# sửa thêm: nodePort: 30080 dưới ports
+k apply -f svc.yaml
+curl http://<node-ip>:30080`},
+{d:'net',q:'Ở namespace "prod": chặn toàn bộ ingress, sau đó chỉ cho pod app=frontend vào pod app=backend ở port 8080.',a:`apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: default-deny, namespace: prod}
+spec:
+  podSelector: {}
+  policyTypes: [Ingress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: allow-fe, namespace: prod}
+spec:
+  podSelector: {matchLabels: {app: backend}}
+  policyTypes: [Ingress]
+  ingress:
+  - from:
+    - podSelector: {matchLabels: {app: frontend}}
+    ports:
+    - {protocol: TCP, port: 8080}`},
+{d:'net',q:'Tạo Ingress "web" class nginx: host shop.local, path / → service web:80.',a:`k create ingress web --class=nginx --rule="shop.local/*=web:80"
+k get ingress web`},
+{d:'net',q:'Chuyển Ingress trên sang Gateway API: có sẵn Gateway "main-gw". Tạo HTTPRoute cho host shop.local → service web:80.',a:`apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: web-route
+spec:
+  parentRefs:
+  - name: main-gw
+  hostnames: ["shop.local"]
+  rules:
+  - matches:
+    - path: {type: PathPrefix, value: /}
+    backendRefs:
+    - name: web
+      port: 80`},
+{d:'net',q:'Kiểm tra DNS: phân giải service "web" ở namespace "prod" từ một pod tạm, ghi kết quả vào /root/dns.txt.',a:`k run dnstest --image=busybox:1.36 --rm -it --restart=Never -- nslookup web.prod.svc.cluster.local > /root/dns.txt
+# Lỗi DNS -> kiểm tra: k get po -n kube-system -l k8s-app=kube-dns ; k get cm coredns -n kube-system -o yaml`},
+// Storage
+{d:'sto',q:'Tạo PV "pv-data" 1Gi hostPath /data, RWO, reclaim Retain. Tạo PVC "pvc-data" 500Mi và pod mount vào /usr/share/nginx/html.',a:`apiVersion: v1
+kind: PersistentVolume
+metadata: {name: pv-data}
+spec:
+  capacity: {storage: 1Gi}
+  accessModes: [ReadWriteOnce]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  hostPath: {path: /data}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: {name: pvc-data}
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: ""
+  resources: {requests: {storage: 500Mi}}
+# Pod: volumes: [{name: d, persistentVolumeClaim: {claimName: pvc-data}}]
+#      volumeMounts: [{name: d, mountPath: /usr/share/nginx/html}]`},
+{d:'sto',q:'Tạo StorageClass "fast" (provisioner rancher.io/local-path, WaitForFirstConsumer) và đặt làm SC mặc định, bỏ mặc định ở SC cũ.',a:`apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: fast
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true"
+provisioner: rancher.io/local-path
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Delete
+---
+k patch sc <sc-cu> -p '{"metadata":{"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
+k get sc   # chỉ "fast" có (default)`},
+{d:'sto',q:'PVC "pvc-app" đang Pending. Tìm nguyên nhân.',a:`k describe pvc pvc-app        # xem Events
+# Hay gặp: storageClassName không tồn tại, accessModes/size không khớp PV nào,
+# WaitForFirstConsumer -> Pending là bình thường cho tới khi có pod dùng nó
+k get pv ; k get sc`},
+// Troubleshooting
+{d:'ts',q:'kubectl báo "connection refused" tới :6443. Tìm và sửa lỗi kube-apiserver.',a:`crictl ps -a | grep kube-apiserver
+crictl logs <container-id>
+# hoặc: ls /var/log/pods/ | grep apiserver ; journalctl -u kubelet | grep apiserver
+vim /etc/kubernetes/manifests/kube-apiserver.yaml
+# Lỗi hay gặp: sai đường dẫn cert, sai --etcd-servers, sai cờ, lỗi thụt lề YAML
+# Lưu file -> kubelet tự tạo lại static pod, đợi 30-60s
+k get nodes`},
+{d:'ts',q:'node01 NotReady. Sửa cho Ready.',a:`k describe node node01 | grep -A5 Conditions
+ssh node01 ; sudo -i
+systemctl status kubelet
+journalctl -u kubelet --no-pager | tail -40
+# Hay gặp: kubelet stopped/disabled, sai đường dẫn trong /var/lib/kubelet/config.yaml,
+# sai --kubeconfig, containerd chết (systemctl status containerd), CNI thiếu
+systemctl daemon-reload && systemctl restart kubelet`},
+{d:'ts',q:'Pod "api" bị CrashLoopBackOff. Lấy log của lần chạy trước ra /root/crash.log và tìm nguyên nhân.',a:`k get po api
+k describe po api | tail -20     # Exit code, OOMKilled?, probe fail?
+k logs api --previous > /root/crash.log
+# Exit 137 + OOMKilled -> tăng limits memory; sai command/args; thiếu ConfigMap/Secret`},
+{d:'ts',q:'Service "web" không trả về gì. Tìm nguyên nhân.',a:`k get svc web -o wide
+k get endpointslices -l kubernetes.io/service-name=web   # rỗng?
+k get po --show-labels    # so selector của svc với label pod
+# Sửa: selector sai -> k edit svc web ; targetPort sai port container
+# Còn lỗi: kiểm tra NetworkPolicy, readinessProbe đang fail`},
+{d:'ts',q:'Pod "big" ở trạng thái Pending. Tìm nguyên nhân.',a:`k describe po big | grep -A10 Events
+# "Insufficient cpu/memory" -> requests quá lớn
+# "had untolerated taint" -> thêm toleration hoặc gỡ taint
+# "didn't match node affinity/selector" -> sửa label/selector
+# "unbound PersistentVolumeClaims" -> xem PVC`},
+{d:'ts',q:'Ghi tên pod dùng nhiều CPU nhất ở namespace "prod" vào /root/top.txt.',a:`k top po -n prod --sort-by=cpu --no-headers | head -1 | awk '{print $1}' > /root/top.txt`},
+{d:'ts',q:'Pods mới không được schedule nhưng node đều Ready và đủ tài nguyên. Kiểm tra scheduler.',a:`k get po -n kube-system | grep scheduler
+crictl ps -a | grep scheduler
+vim /etc/kubernetes/manifests/kube-scheduler.yaml   # sai image, sai --kubeconfig...
+# Pod Pending không có event "Scheduled" là dấu hiệu scheduler chết`}
+];
+
+let labFilter='all';
+function renderLabFilters(){
+ const keys=['all','ts','arch','net','work','sto','lin'];
+ document.getElementById('labFilters').innerHTML=keys.map(k=>{
+  const n=k==='all'?LABS.length:LABS.filter(l=>l.d===k).length;
+  return `<button class="btn ${labFilter===k?'on':''}" data-f="${k}">${k==='all'?'Tất cả':DOM[k].s} (${n})</button>`}).join('');
+}
+function renderLabs(){
+ document.getElementById('labs').innerHTML=LABS.map((l,i)=>({l,i})).filter(o=>labFilter==='all'||o.l.d===labFilter).map(({l,i})=>`
+ <div class="card lab ${state.labs[i]?'done':''}">
+  <div class="head"><span class="tag ${DOM[l.d].t}">${DOM[l.d].s}</span>
+  <button class="btn donebtn ${state.labs[i]?'on':''}" data-l="${i}">${state.labs[i]?'✓ Đã làm':'Đánh dấu xong'}</button></div>
+  <div class="q">${esc(l.q)}</div>
+  <details><summary>Xem lời giải</summary><pre>${esc(l.a)}</pre></details>
+ </div>`).join('');
+}
+document.getElementById('labFilters').addEventListener('click',e=>{const f=e.target.dataset.f;if(!f)return;labFilter=f;renderLabFilters();renderLabs()});
+document.getElementById('labs').addEventListener('click',e=>{const i=e.target.dataset.l;if(i==null)return;state.labs[i]=!state.labs[i];save();renderLabs()});
+
+/* ---------- FLASHCARDS ---------- */
+const FC=[
+{d:'arch',q:'Static pod của control plane nằm ở đâu?',a:'/etc/kubernetes/manifests/ — kubelet tự tạo lại pod khi file thay đổi.'},
+{d:'arch',q:'4 cờ cần cho etcdctl snapshot save?',a:'--endpoints, --cacert, --cert, --key (lấy trong /etc/kubernetes/manifests/etcd.yaml).'},
+{d:'arch',q:'Thứ tự upgrade cluster?',a:'Control plane trước (kubeadm upgrade apply), rồi từng worker (kubeadm upgrade node). Mỗi node: upgrade kubeadm → drain → upgrade kubelet/kubectl → daemon-reload, restart kubelet → uncordon. Chỉ nhảy 1 minor mỗi lần.'},
+{d:'arch',q:'Role vs ClusterRole?',a:'Role: trong 1 namespace. ClusterRole: toàn cluster hoặc tài nguyên không thuộc namespace (nodes, pv). ClusterRole cũng có thể gắn bằng RoleBinding để dùng trong 1 namespace.'},
+{d:'arch',q:'Kiểm tra quyền của ServiceAccount sa1 ở ns dev?',a:'kubectl auth can-i <verb> <resource> -n dev --as=system:serviceaccount:dev:sa1'},
+{d:'arch',q:'Lệnh in câu join worker?',a:'kubeadm token create --print-join-command'},
+{d:'arch',q:'Kiểm tra hạn chứng chỉ cluster?',a:'kubeadm certs check-expiration · gia hạn: kubeadm certs renew all'},
+{d:'arch',q:'helm install vs helm template?',a:'install: cài release vào cluster. template: chỉ render YAML ra stdout, không cài.'},
+{d:'arch',q:'Apply một thư mục kustomize?',a:'kubectl apply -k <dir> · xem trước: kubectl kustomize <dir>'},
+{d:'arch',q:'CRD là gì? Operator là gì?',a:'CRD: định nghĩa kiểu tài nguyên mới cho API server. Operator: controller theo dõi custom resource đó và tự vận hành ứng dụng.'},
+{d:'work',q:'Native sidecar container khai báo thế nào?',a:'Đặt trong initContainers với restartPolicy: Always. Chạy suốt vòng đời pod, khởi động trước container chính.'},
+{d:'work',q:'HPA không scale, TARGETS hiện <unknown>?',a:'Thiếu metrics-server hoặc pod không đặt resources.requests cho CPU/memory.'},
+{d:'work',q:'Taint effect có những loại nào?',a:'NoSchedule, PreferNoSchedule, NoExecute (đuổi cả pod đang chạy không có toleration).'},
+{d:'work',q:'Rollback deployment về revision 2?',a:'kubectl rollout undo deploy/<name> --to-revision=2'},
+{d:'work',q:'Liveness vs readiness vs startup probe?',a:'Liveness fail → restart container. Readiness fail → bỏ pod khỏi endpoint Service. Startup → tạm hoãn 2 probe kia tới khi app khởi động xong.'},
+{d:'work',q:'Tạo YAML pod nhanh không cần gõ tay?',a:'kubectl run x --image=nginx --dry-run=client -o yaml > x.yaml'},
+{d:'net',q:'FQDN của service web ở ns prod?',a:'web.prod.svc.cluster.local'},
+{d:'net',q:'NetworkPolicy podSelector: {} nghĩa là gì?',a:'Chọn tất cả pod trong namespace. Kèm policyTypes: [Ingress] và không có rule → deny mọi ingress.'},
+{d:'net',q:'from: có namespaceSelector và podSelector cùng 1 phần tử (-) vs 2 phần tử khác nhau?',a:'Cùng 1 phần tử = AND (pod khớp label trong namespace khớp label). 2 phần tử riêng = OR.'},
+{d:'net',q:'Các thành phần của Gateway API?',a:'GatewayClass (loại controller, do hạ tầng cung cấp) → Gateway (listener, port, host) → HTTPRoute (rule định tuyến tới Service, gắn qua parentRefs).'},
+{d:'net',q:'Service không có endpoint, kiểm tra gì trước?',a:'Selector của Service có khớp label pod không, pod có Ready không (readiness probe).'},
+{d:'net',q:'CoreDNS cấu hình ở đâu?',a:'ConfigMap coredns trong kube-system (Corefile). Pod CoreDNS có label k8s-app=kube-dns.'},
+{d:'net',q:'kube-proxy làm gì?',a:'Chạy trên mỗi node, lập trình iptables/IPVS (hoặc nftables) để chuyển traffic từ ClusterIP/NodePort đến pod.'},
+{d:'sto',q:'Access mode RWO, ROX, RWX, RWOP?',a:'ReadWriteOnce (1 node), ReadOnlyMany, ReadWriteMany, ReadWriteOncePod (đúng 1 pod).'},
+{d:'sto',q:'WaitForFirstConsumer làm gì?',a:'Hoãn bind/provision PV cho đến khi có pod dùng PVC được schedule → PV tạo đúng node/zone của pod.'},
+{d:'sto',q:'Đặt StorageClass mặc định?',a:'Annotation storageclass.kubernetes.io/is-default-class: "true"'},
+{d:'sto',q:'reclaimPolicy Retain vs Delete?',a:'Retain: xoá PVC thì PV chuyển Released, dữ liệu giữ lại. Delete: xoá luôn PV và ổ lưu trữ phía sau.'},
+{d:'ts',q:'kubectl không chạy được (apiserver chết), xem container bằng gì?',a:'crictl ps -a, crictl logs <id>, hoặc /var/log/pods/, journalctl -u kubelet.'},
+{d:'ts',q:'Exit code 137 kèm OOMKilled?',a:'Container vượt limits.memory → tăng limit hoặc sửa app.'},
+{d:'ts',q:'Xem log lần chạy trước của container đã crash?',a:'kubectl logs <pod> --previous (thêm -c <container> nếu pod nhiều container)'},
+{d:'ts',q:'Cấu hình kubelet nằm ở đâu?',a:'/var/lib/kubelet/config.yaml; drop-in systemd ở /usr/lib/systemd/system/kubelet.service.d/10-kubeadm.conf; kubeconfig ở /etc/kubernetes/kubelet.conf.'},
+{d:'ts',q:'Xem events mới nhất của namespace?',a:'kubectl get events -n <ns> --sort-by=.lastTimestamp'},
+{d:'lin',q:'Sau khi sửa unit file systemd cần chạy gì?',a:'systemctl daemon-reload rồi systemctl restart <service>'},
+{d:'lin',q:'Xem port nào đang lắng nghe?',a:'ss -tlnp (hoặc netstat -tlnp)'},
+{d:'lin',q:'Image vs container?',a:'Image: template chỉ đọc gồm nhiều layer. Container: process đang chạy từ image, có layer ghi riêng.'},
+{d:'lin',q:'Vì sao K8s không cần Docker?',a:'Kubelet nói chuyện với runtime qua CRI. containerd/CRI-O hỗ trợ CRI trực tiếp; Docker Engine thì cần adapter cri-dockerd (dockershim đã bị xoá từ 1.24).'}
+];
+let fcFilter='all',fcOrder=[],fcIdx=0,fcFlipped=false;
+function fcBuild(){fcOrder=FC.map((_,i)=>i).filter(i=>fcFilter==='all'||FC[i].d===fcFilter);fcIdx=0;fcFlipped=false;fcRender()}
+function fcRender(){
+ const c=document.getElementById('fcCard');
+ if(!fcOrder.length){c.innerHTML='<div class="muted">Không có thẻ.</div>';return}
+ const f=FC[fcOrder[fcIdx]];
+ c.innerHTML=fcFlipped?`<div class="side">ĐÁP ÁN · ${DOM[f.d].s}</div><div class="ans">${esc(f.a)}</div>`:`<div class="side">CÂU HỎI · ${DOM[f.d].s} · chạm để lật</div><div class="txt">${esc(f.q)}</div>`;
+ document.getElementById('fcCount').textContent=`${fcIdx+1} / ${fcOrder.length}`;
+}
+function renderFcFilters(){document.getElementById('fcFilters').innerHTML=['all','ts','arch','net','work','sto','lin'].map(k=>`<button class="btn ${fcFilter===k?'on':''}" data-f="${k}">${k==='all'?'Tất cả':DOM[k].s}</button>`).join('')}
+document.getElementById('fcFilters').addEventListener('click',e=>{const f=e.target.dataset.f;if(!f)return;fcFilter=f;renderFcFilters();fcBuild()});
+document.getElementById('fcCard').onclick=document.getElementById('fcFlip').onclick=()=>{fcFlipped=!fcFlipped;fcRender()};
+document.getElementById('fcNext').onclick=()=>{if(!fcOrder.length)return;fcIdx=(fcIdx+1)%fcOrder.length;fcFlipped=false;fcRender()};
+document.getElementById('fcPrev').onclick=()=>{if(!fcOrder.length)return;fcIdx=(fcIdx-1+fcOrder.length)%fcOrder.length;fcFlipped=false;fcRender()};
+document.getElementById('fcShuf').onclick=()=>{for(let i=fcOrder.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[fcOrder[i],fcOrder[j]]=[fcOrder[j],fcOrder[i]]}fcIdx=0;fcFlipped=false;fcRender()};
+
+/* ---------- CHEAT TABLE ---------- */
+const CHEAT=[
+['Pod','k run nginx --image=nginx --port=80'],
+['Deployment','k create deploy web --image=nginx --replicas=3'],
+['Service','k expose deploy web --port=80 --target-port=8080 --type=ClusterIP'],
+['ConfigMap','k create cm cfg --from-literal=K=V --from-file=app.conf'],
+['Secret','k create secret generic s --from-literal=P=x'],
+['Job','k create job j --image=busybox -- echo hi'],
+['CronJob','k create cronjob c --image=busybox --schedule="*/5 * * * *" -- date'],
+['SA','k create sa sa1 -n dev'],
+['Role','k create role r --verb=get,list --resource=pods -n dev'],
+['RoleBinding','k create rolebinding rb --role=r --serviceaccount=dev:sa1 -n dev'],
+['Ingress','k create ingress i --class=nginx --rule="host/path=svc:80"'],
+['Quota','k create quota q --hard=pods=10,cpu=4 -n dev'],
+['PriorityClass','k create priorityclass high --value=1000'],
+['Scale','k scale deploy web --replicas=5'],
+['Image','k set image deploy/web nginx=nginx:1.28'],
+['Label','k label node node01 disk=ssd'],
+['Drain','k drain node01 --ignore-daemonsets --delete-emptydir-data'],
+['Pod tạm','k run t --image=busybox --rm -it --restart=Never -- sh']];
+document.getElementById('cheatTbl').innerHTML='<tr><th>Tạo</th><th>Lệnh</th></tr>'+CHEAT.map(r=>`<tr><td>${r[0]}</td><td><code>${esc(r[1])}</code></td></tr>`).join('');
+
+/* ---------- MOCK ---------- */
+let mock=store.get('mock',null),timerId=null;
+function pick(){
+ const quota={ts:5,arch:4,net:3,work:2,sto:2};let sel=[];
+ for(const k in quota){const pool=LABS.map((l,i)=>i).filter(i=>LABS[i].d===k).sort(()=>Math.random()-.5);sel=sel.concat(pool.slice(0,quota[k]))}
+ return sel.sort(()=>Math.random()-.5);
+}
+function fmt(s){const h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return `${h}:${String(m).padStart(2,'0')}:${String(x).padStart(2,'0')}`}
+function renderMock(){
+ const t=document.getElementById('timer');
+ if(!mock){t.textContent='2:00:00';return}
+ t.textContent=fmt(mock.left);t.classList.toggle('low',mock.left<900);
+ document.getElementById('mkList').innerHTML=mock.ids.map((id,n)=>{const l=LABS[id];
+  return `<div class="item"><span class="n">${n+1}</span><div style="flex:1"><span class="tag ${DOM[l.d].t}">${DOM[l.d].s}</span><div class="small" style="margin-top:4px">${esc(l.q)}</div>
+  ${mock.left===0?`<details><summary>Lời giải</summary><pre>${esc(l.a)}</pre></details>`:''}</div>
+  <input type="checkbox" data-m="${n}" ${mock.ok[n]?'checked':''} style="accent-color:var(--acc);width:20px;height:20px;flex:none" aria-label="Làm đúng"></div>`}).join('');
+ const ok=mock.ok.filter(Boolean).length,pct=Math.round(ok/mock.ids.length*100);
+ document.getElementById('mkScore').innerHTML=`Tự chấm: ${ok}/${mock.ids.length} = <span style="color:${pct>=66?'var(--ok)':'var(--bad)'}">${pct}%</span> ${pct>=66?'· ĐỖ':'· cần ≥ 66%'}`;
+}
+function tick(){if(!mock)return;mock.left=Math.max(0,mock.left-1);if(mock.left%10===0)store.set('mock',mock);if(mock.left===0){stop();renderMock()}else{const t=document.getElementById('timer');t.textContent=fmt(mock.left);t.classList.toggle('low',mock.left<900)}}
+function stop(){clearInterval(timerId);timerId=null;store.set('mock',mock)}
+document.getElementById('mkNew').onclick=()=>{stop();mock={ids:pick(),ok:[],left:7200};store.set('mock',mock);renderMock()};
+document.getElementById('mkStart').onclick=()=>{if(!mock){mock={ids:pick(),ok:[],left:7200};renderMock()}if(!timerId&&mock.left>0)timerId=setInterval(tick,1000)};
+document.getElementById('mkPause').onclick=stop;
+document.getElementById('mkList').addEventListener('change',e=>{const n=e.target.dataset.m;if(n==null||!mock)return;mock.ok[n]=e.target.checked;store.set('mock',mock);renderMock()});
+
+/* ---------- LESSONS ---------- */
+let curWeek=store.get('week',1);
+function renderWeek(){
+ const wk=curWeek,list=LESSONS.map((l,i)=>({l,i})).filter(o=>o.l.w===wk);
+ document.getElementById('weekTabs').innerHTML=WEEKS.map((w,i)=>{
+  const ls=LESSONS.filter(l=>l.w===i+1),d=LESSONS.map((l,j)=>l.w===i+1&&state.les[j]).filter(Boolean).length;
+  return `<a class="btn ${wk===i+1?'on':''}" href="#tuan-${i+1}" style="text-decoration:none">T${i+1}${d===ls.length&&ls.length?' ✓':''}</a>`}).join('');
+ const W=WEEKS[wk-1],done=list.filter(o=>state.les[o.i]).length,ex=list.reduce((a,o)=>a+o.l.n,0);
+ document.getElementById('weekHead').innerHTML=`<div class="wkhead"><h2>${W.t}</h2>
+  <div class="small muted">${list.length} bài · ${ex} bài tập · đã học ${done}/${list.length}</div>
+  <div class="small" style="color:var(--acc);margin-top:4px">▶ ${W.kk}</div></div>`;
+ document.getElementById('lessonList').innerHTML=list.map(({l,i},k)=>`
+  <details class="card lesson ${state.les[i]?'done':''}" data-i="${i}">
+   <summary><span class="num">${wk}.${k+1}</span><span class="tt">${esc(l.t)}</span><span class="meta">${l.n} BT</span><span class="ck">${state.les[i]?'✓':''}</span></summary>
+   <div class="lbody">${l.h}
+    <button class="btn ldone ${state.les[i]?'':'pri'}" data-done="${i}">${state.les[i]?'✓ Đã học xong · bấm để bỏ đánh dấu':'Đánh dấu đã học xong bài này'}</button>
+   </div></details>`).join('');
+ document.getElementById('weekNav').innerHTML=(wk>1?`<a class="btn" style="text-decoration:none" href="#tuan-${wk-1}">← Tuần ${wk-1}</a>`:'')+(wk<8?`<a class="btn pri" style="text-decoration:none" href="#tuan-${wk+1}">Tuần ${wk+1} →</a>`:'');
+}
+document.getElementById('lessonList').addEventListener('click',e=>{
+ const b=e.target.closest('[data-done]');if(!b)return;const i=b.dataset.done;
+ state.les[i]=!state.les[i];save();
+ const openIdx=state.les[i]?null:i;renderWeek();
+ const next=state.les[i]?document.querySelector(`.lesson[data-i="${+i+1}"]`):null;
+ if(next&&LESSONS[+i+1]&&LESSONS[+i+1].w===curWeek){next.open=true;next.scrollIntoView({behavior:'smooth',block:'start'})}
+ else if(openIdx!=null){const d=document.querySelector(`.lesson[data-i="${i}"]`);if(d)d.open=true}
+});
+
+/* ---------- PROGRESS & ROUTING ---------- */
+function updateProgress(){
+ const tp=WEEKS.reduce((a,w)=>a+w.items.length,0),dp=Object.values(state.plan).filter(Boolean).length;
+ const dl=Object.values(state.labs).filter(Boolean).length,dle=Object.values(state.les).filter(Boolean).length;
+ const pct=Math.round((dp+dl+dle)/(tp+LABS.length+LESSONS.length)*100);
+ document.getElementById('pbar').style.width=pct+'%';
+ document.getElementById('ptext').textContent=`Tiến độ ${pct}% · bài học ${dle}/${LESSONS.length} · lộ trình ${dp}/${tp} · lab ${dl}/${LABS.length}`;
+}
+const ROUTES=['lo-trinh','bai-hoc','nen-tang','lab','flashcard','cheatsheet','thi-thu'];
+function route(){
+ let h=location.hash.slice(1);const m=h.match(/^tuan-([1-8])$/);
+ if(m){curWeek=+m[1];store.set('week',curWeek);h='bai-hoc'}
+ if(h==='bai-hoc')renderWeek();
+ const cur=ROUTES.includes(h)?h:'lo-trinh';
+ document.querySelectorAll('section').forEach(s=>s.classList.toggle('on',s.id===cur));
+ document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+cur));
+ window.scrollTo(0,0);
+}
+window.addEventListener('hashchange',route);
+
+renderWeights();renderWeeks();renderPre();renderLabFilters();renderLabs();renderFcFilters();fcBuild();renderMock();updateProgress();route();
+</script>
+</body>
+</html>
