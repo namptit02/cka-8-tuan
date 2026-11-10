@@ -78,7 +78,8 @@ WantedBy=multi-user.target
 UNIT
 
 sudo systemctl daemon-reload
-sudo systemctl enable --now ttyd
+sudo systemctl enable ttyd
+sudo systemctl restart ttyd   # restart: thay cấu hình mặc định của gói apt (chỉ nghe trên lo)
 sleep 1
 sudo systemctl --no-pager --lines=5 status ttyd || true
 
