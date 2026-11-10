@@ -20,3 +20,13 @@ curl -fsSL https://<ten-site>.vercel.app/scripts/setup-web-terminal.sh | bash
 # có mật khẩu: TTYD_PASS='...' bash setup-web-terminal.sh
 ```
 Mở `https://192.168.64.5:7681` một lần để chấp nhận chứng chỉ tự ký, rồi bấm **Kết nối** trong trang.
+
+## cka-lab: thử thách Linux tự chấm (chạy trên VM)
+
+```bash
+sudo curl -fsSL https://cka-umber.vercel.app/scripts/cka-lab -o /usr/local/bin/cka-lab && sudo chmod +x /usr/local/bin/cka-lab
+cka-lab list          # 15 sự cố hệ thống (c1–c15) + 8 bài vim tính giờ (v1–v8)
+cka-lab start c1      # tạo sự cố → sửa → cka-lab check c1 → cka-lab reset c1
+cka-lab reset all     # dọn sạch mọi thứ cka-lab tạo ra (tiền tố cka-)
+```
+Chạy bằng user thường; lệnh tự hỏi sudo khi cần. Chỉ tác động lên VM.

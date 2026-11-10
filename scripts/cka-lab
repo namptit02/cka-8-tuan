@@ -1,0 +1,676 @@
+#!/usr/bin/env bash
+# cka-lab — thử thách Linux thực chiến cho ôn CKA, tự gây sự cố và tự chấm điểm.
+#
+# Chỉ tác động lên VM đang chạy. Mọi tài nguyên tạo ra đều có tiền tố "cka-"
+# (service cka-*, /opt/cka-*, /etc/cka-*, ~/cka-lab, ~/cka-answers, ~/cka-vim)
+# và được dọn bằng:  cka-lab reset <id>   hoặc   cka-lab reset all
+#
+#   cka-lab list            danh sách thử thách + trạng thái
+#   cka-lab start <id>      tạo sự cố / file bài tập, bắt đầu bấm giờ
+#   cka-lab task <id>       in lại đề
+#   cka-lab hint <id>       gợi ý
+#   cka-lab check <id>      chấm điểm
+#   cka-lab reset <id|all>  dọn dẹp, trả VM về như cũ
+#   cka-lab score           tổng kết
+set -uo pipefail
+VERSION="1.0"
+
+if [ "$(id -u)" = 0 ] && [ -z "${CKA_LAB_ALLOW_ROOT:-}" ]; then
+  echo "Chạy cka-lab bằng user thường (không dùng sudo). Lệnh sẽ tự hỏi sudo khi cần."; exit 1
+fi
+ME="$(id -un)"; MYGROUP="$(id -gn)"
+HOMEDIR="${HOME:-$(getent passwd "$ME" | cut -d: -f6)}"
+ANS="$HOMEDIR/cka-answers"; LAB="$HOMEDIR/cka-lab"; VIM="$HOMEDIR/cka-vim"; STATE="$HOMEDIR/.cka-lab"
+LIB=/usr/local/lib/cka
+mkdir -p "$ANS" "$LAB" "$VIM" "$STATE"
+if [ -t 1 ]; then G=$'\e[32m'; R=$'\e[31m'; Y=$'\e[33m'; C=$'\e[36m'; B=$'\e[1m'; N=$'\e[0m'; else G='' R='' Y='' C='' B='' N=''; fi
+SUDO=sudo; [ "$(id -u)" = 0 ] && SUDO=
+PASS=0; FAIL=0
+ok(){ echo "  ${G}✅ $*${N}"; PASS=$((PASS+1)); }
+no(){ echo "  ${R}❌ $*${N}"; FAIL=$((FAIL+1)); }
+t(){ if eval "$2" >/dev/null 2>&1; then ok "$1"; else no "$1"; fi; }
+have_systemd(){ [ -d /run/systemd/system ]; }
+need_systemd(){ have_systemd || { echo "${R}Thử thách này cần systemd (VM Ubuntu bình thường đều có).${N}"; exit 1; }; }
+mkunit(){ printf '%s\n' "$2" | $SUDO tee "/etc/systemd/system/$1.service" >/dev/null; $SUDO systemctl daemon-reload; }
+rmunit(){
+  have_systemd || return 0
+  for u in "$@"; do
+    $SUDO systemctl disable --now "$u" >/dev/null 2>&1
+    $SUDO rm -rf "/etc/systemd/system/$u.service" "/etc/systemd/system/$u.service.d"
+  done
+  $SUDO systemctl daemon-reload; $SUDO systemctl reset-failed >/dev/null 2>&1; true
+}
+stop_transient(){ have_systemd && for u in "$@"; do $SUDO systemctl stop "$u" >/dev/null 2>&1; done; true; }
+web(){ curl -s --max-time 3 "$1" 2>/dev/null; }
+PY="$(command -v python3 || echo /usr/bin/python3)"
+
+IDS="c1 c2 c3 c4 c5 c6 c7 c8 c9 c10 c11 c12 c13 c14 c15 v1 v2 v3 v4 v5 v6 v7 v8"
+
+# =====================================================================
+# Thử thách hệ thống (c1–c15)
+# =====================================================================
+
+title_c1="Service web bị tắt"
+task_c1(){ cat <<EOF
+Service ${B}cka-web${N} đã được cài nhưng đang tắt và không tự chạy khi VM khởi động.
+Yêu cầu:
+  1. cka-web đang chạy (active)
+  2. cka-web tự chạy khi boot (enabled)
+  3. curl http://127.0.0.1:8088 trả về "cka-web OK"
+EOF
+}
+hint_c1(){ echo "systemctl status / enable / start — có thể gộp: systemctl enable --now"; }
+setup_c1(){ need_systemd
+  $SUDO mkdir -p /opt/cka-web; echo "cka-web OK" | $SUDO tee /opt/cka-web/index.html >/dev/null
+  mkunit cka-web "[Unit]
+Description=CKA lab web
+[Service]
+ExecStart=$PY -m http.server 8088 --bind 127.0.0.1 --directory /opt/cka-web
+[Install]
+WantedBy=multi-user.target"
+  $SUDO systemctl disable --now cka-web >/dev/null 2>&1; true; }
+check_c1(){
+  t "cka-web đang chạy" 'systemctl is-active --quiet cka-web'
+  t "cka-web enabled khi boot" '[ "$(systemctl is-enabled cka-web 2>/dev/null)" = enabled ]'
+  t "127.0.0.1:8088 trả về cka-web OK" 'web http://127.0.0.1:8088/ | grep -q "cka-web OK"'; }
+reset_c1(){ rmunit cka-web; $SUDO rm -rf /opt/cka-web; }
+
+title_c2="Service không khởi động được (203/EXEC)"
+task_c2(){ cat <<EOF
+Service ${B}cka-api${N} liên tục lỗi và khởi động lại.
+Yêu cầu: tìm nguyên nhân trong log và sửa để cka-api chạy, trả lời HTTP ở 127.0.0.1:8092.
+EOF
+}
+hint_c2(){ echo "systemctl status cka-api ; journalctl -u cka-api -n 20 ; systemctl cat cka-api — xem kỹ đường dẫn ExecStart. Sửa file xong nhớ daemon-reload."; }
+setup_c2(){ need_systemd
+  $SUDO mkdir -p /opt/cka-api; echo "cka-api OK" | $SUDO tee /opt/cka-api/index.html >/dev/null
+  mkunit cka-api "[Unit]
+Description=CKA lab API
+StartLimitIntervalSec=0
+[Service]
+ExecStart=/usr/bin/pyhton3 -m http.server 8092 --bind 127.0.0.1 --directory /opt/cka-api
+Restart=on-failure
+RestartSec=3
+[Install]
+WantedBy=multi-user.target"
+  $SUDO systemctl enable --now cka-api >/dev/null 2>&1; true; }
+check_c2(){
+  t "cka-api đang chạy" 'systemctl is-active --quiet cka-api'
+  t "127.0.0.1:8092 trả về cka-api OK" 'web http://127.0.0.1:8092/ | grep -q "cka-api OK"'; }
+reset_c2(){ rmunit cka-api; $SUDO rm -rf /opt/cka-api; }
+
+title_c3="Đổi cấu hình service bằng drop-in"
+task_c3(){ cat <<EOF
+Service ${B}cka-worker${N} đang chạy với biến MODE=dev (khai báo trong unit file).
+Yêu cầu:
+  1. Đổi thành MODE=prod bằng ${B}drop-in${N} (thư mục cka-worker.service.d/), KHÔNG sửa file unit chính
+  2. Tiến trình đang chạy phải dùng MODE=prod (kiểm tra: cat /tmp/cka-worker.mode)
+EOF
+}
+hint_c3(){ echo "sudo systemctl edit cka-worker  → thêm [Service] / Environment=MODE=prod → lưu → sudo systemctl restart cka-worker"; }
+setup_c3(){ need_systemd
+  mkunit cka-worker "[Unit]
+Description=CKA lab worker
+[Service]
+Environment=MODE=dev
+ExecStart=/bin/sh -c 'while true; do echo \"mode=\$\$MODE\" > /tmp/cka-worker.mode; sleep 2; done'
+[Install]
+WantedBy=multi-user.target"
+  $SUDO systemctl enable --now cka-worker >/dev/null 2>&1
+  $SUDO sha256sum /etc/systemd/system/cka-worker.service | cut -d' ' -f1 > "$STATE/c3.sum"; }
+check_c3(){
+  t "Không sửa file unit chính" '[ "$($SUDO sha256sum /etc/systemd/system/cka-worker.service | cut -d" " -f1)" = "$(cat "$STATE/c3.sum")" ]'
+  t "Có file drop-in .conf trong cka-worker.service.d/" 'ls /etc/systemd/system/cka-worker.service.d/*.conf'
+  t "systemd ghi nhận MODE=prod" 'systemctl show -p Environment cka-worker | grep -q "MODE=prod"'
+  t "Tiến trình đang chạy với mode=prod" 'sleep 2; grep -qx "mode=prod" /tmp/cka-worker.mode'; }
+reset_c3(){ rmunit cka-worker; $SUDO rm -f /tmp/cka-worker.mode; rm -f "$STATE/c3.sum"; }
+
+title_c4="Tìm mã lỗi trong journal"
+task_c4(){ cat <<EOF
+Service ${B}cka-noisy${N} ghi rất nhiều log. Trong đó có đúng 1 dòng FATAL chứa mã lỗi dạng ERR-1234-ABC.
+Yêu cầu: ghi ${B}chỉ mã lỗi${N} vào ~/cka-answers/c4.txt
+EOF
+}
+hint_c4(){ echo "journalctl -u cka-noisy --no-pager | grep -i fatal ; grep -o 'ERR-[0-9]*-[A-Z]*'"; }
+setup_c4(){ need_systemd
+  local code; code="ERR-$((RANDOM % 9000 + 1000))-$(tr -dc 'A-Z' </dev/urandom | head -c3)"
+  printf %s "$code" | sha256sum | cut -d' ' -f1 > "$STATE/c4.sum"
+  $SUDO mkdir -p "$LIB"
+  printf '%s' "$code" | $SUDO tee /run/cka-noisy.code >/dev/null; $SUDO chmod 600 /run/cka-noisy.code
+  $SUDO tee "$LIB/noisy.sh" >/dev/null <<'SH'
+#!/bin/bash
+CODE=$(cat /run/cka-noisy.code 2>/dev/null); rm -f /run/cka-noisy.code
+comp=(api db cache queue auth billing)
+for i in $(seq 1 300); do
+  echo "INFO [${comp[RANDOM%6]}] request id=$RANDOM latency=$((RANDOM%900))ms status=200"
+  [ $((i % 37)) -eq 0 ] && echo "WARN [${comp[RANDOM%6]}] slow response id=$RANDOM"
+  [ "$i" -eq 173 ] && echo "FATAL [billing] payment worker crashed code=$CODE"
+done
+exec sleep infinity
+SH
+  $SUDO chmod 755 "$LIB/noisy.sh"
+  mkunit cka-noisy "[Unit]
+Description=CKA lab noisy logger
+[Service]
+ExecStart=/bin/bash $LIB/noisy.sh"
+  $SUDO systemctl restart cka-noisy; rm -f "$ANS/c4.txt"; }
+check_c4(){
+  t "Có file ~/cka-answers/c4.txt" '[ -s "$ANS/c4.txt" ]'
+  t "Mã lỗi đúng" '[ "$(tr -d "[:space:]" < "$ANS/c4.txt" | sha256sum | cut -d" " -f1)" = "$(cat "$STATE/c4.sum")" ]'; }
+reset_c4(){ rmunit cka-noisy; $SUDO rm -f "$LIB/noisy.sh" /run/cka-noisy.code; rm -f "$STATE/c4.sum" "$ANS/c4.txt"; }
+
+title_c5="Sửa quyền và chủ sở hữu file kubeconfig"
+task_c5(){ cat <<EOF
+File ${B}~/cka-lab/c5/config${N} (một kubeconfig) đang thuộc root và ai cũng đọc/ghi được (777).
+Yêu cầu: chủ sở hữu là $ME:$MYGROUP, quyền 600.
+EOF
+}
+hint_c5(){ echo "ls -l ; sudo chown USER:GROUP file ; chmod 600 file"; }
+setup_c5(){
+  mkdir -p "$LAB/c5"
+  cat > "$LAB/c5/config" <<'K'
+apiVersion: v1
+kind: Config
+clusters:
+- cluster: {server: https://192.168.64.5:6443}
+  name: lab
+users:
+- name: admin
+  user: {token: fake-token-for-lab}
+K
+  $SUDO chown root:root "$LAB/c5/config"; $SUDO chmod 777 "$LAB/c5/config"; }
+check_c5(){
+  t "Chủ sở hữu $ME:$MYGROUP" '[ "$(stat -c %U:%G "$LAB/c5/config")" = "$ME:$MYGROUP" ]'
+  t "Quyền 600" '[ "$(stat -c %a "$LAB/c5/config")" = 600 ]'; }
+reset_c5(){ $SUDO rm -rf "$LAB/c5"; }
+
+title_c6="Ổ đĩa đầy: tìm và xoá file lớn nhất"
+task_c6(){ cat <<EOF
+Thư mục ${B}/var/tmp/cka-c6${N} đang chiếm nhiều dung lượng (giống node bị DiskPressure).
+Yêu cầu:
+  1. Ghi đường dẫn đầy đủ của FILE lớn nhất trong /var/tmp/cka-c6 vào ~/cka-answers/c6.txt
+  2. Xoá đúng file đó, giữ nguyên các file khác
+EOF
+}
+hint_c6(){ echo "df -h ; sudo du -ah /var/tmp/cka-c6 | sort -h | tail ; hoặc: sudo find /var/tmp/cka-c6 -type f -size +50M -exec ls -lh {} \\;"; }
+setup_c6(){
+  local base=/var/tmp/cka-c6 big=300 mid=80 free
+  free=$(df -Pm /var/tmp | awk 'NR==2{print $4}')
+  [ "${free:-0}" -lt 1200 ] && { big=120; mid=40; }
+  $SUDO rm -rf "$base"
+  $SUDO mkdir -p "$base"/{app/logs,app/.cache,data/old,data/new}
+  local r; r=$(tr -dc 'a-z0-9' </dev/urandom | head -c6)
+  $SUDO mkdir -p "$base/app/.cache/$r"
+  local target="$base/app/.cache/$r/blob.bin"
+  $SUDO fallocate -l "${big}M" "$target" 2>/dev/null || $SUDO dd if=/dev/zero of="$target" bs=1M count="$big" status=none
+  $SUDO fallocate -l "${mid}M" "$base/data/old/dump.sql" 2>/dev/null || $SUDO dd if=/dev/zero of="$base/data/old/dump.sql" bs=1M count="$mid" status=none
+  for i in 1 2 3 4 5; do $SUDO dd if=/dev/zero of="$base/app/logs/app-$i.log" bs=1M count=$((i*3)) status=none; done
+  echo "$target" > "$STATE/c6.path"; rm -f "$ANS/c6.txt"; }
+check_c6(){
+  t "Đường dẫn trong c6.txt đúng" '[ "$(tr -d "[:space:]" < "$ANS/c6.txt")" = "$(cat "$STATE/c6.path")" ]'
+  t "File lớn nhất đã bị xoá" '[ ! -e "$(cat "$STATE/c6.path")" ]'
+  t "Các file khác vẫn còn" '[ -e /var/tmp/cka-c6/data/old/dump.sql ] && [ -e /var/tmp/cka-c6/app/logs/app-5.log ]'; }
+reset_c6(){ $SUDO rm -rf /var/tmp/cka-c6; rm -f "$STATE/c6.path" "$ANS/c6.txt"; }
+
+title_c7="sysctl: bật lại IP forwarding vĩnh viễn"
+task_c7(){ cat <<EOF
+Node này đang có ${B}net.ipv4.ip_forward = 0${N} — mạng pod của Kubernetes sẽ hỏng.
+${Y}(Nếu VM đang chạy cluster, pod sẽ mất mạng cho tới khi bạn sửa xong.)${N}
+Yêu cầu: ip_forward = 1 ngay bây giờ VÀ vẫn = 1 sau khi chạy lại "sudo sysctl --system" (tức là sau reboot).
+EOF
+}
+hint_c7(){ echo "sysctl net.ipv4.ip_forward ; grep -r ip_forward /etc/sysctl.conf /etc/sysctl.d/ — file nào đang đặt = 0? File nạp sau thắng."; }
+setup_c7(){
+  sysctl -n net.ipv4.ip_forward > "$STATE/c7.orig" 2>/dev/null || echo 1 > "$STATE/c7.orig"
+  echo "net.ipv4.ip_forward = 0   # cka-lab c7" | $SUDO tee /etc/sysctl.d/99-cka-zz-tuning.conf >/dev/null
+  $SUDO sysctl -w net.ipv4.ip_forward=0 >/dev/null; }
+check_c7(){
+  t "ip_forward hiện tại = 1" '[ "$(sysctl -n net.ipv4.ip_forward)" = 1 ]'
+  t "Vẫn = 1 sau khi nạp lại toàn bộ cấu hình (sysctl --system)" '$SUDO sysctl --system >/dev/null 2>&1; [ "$(sysctl -n net.ipv4.ip_forward)" = 1 ]'; }
+reset_c7(){ $SUDO rm -f /etc/sysctl.d/99-cka-zz-tuning.conf
+  [ -f "$STATE/c7.orig" ] && $SUDO sysctl -w net.ipv4.ip_forward="$(cat "$STATE/c7.orig")" >/dev/null; rm -f "$STATE/c7.orig"; }
+
+title_c8="Xung đột cổng: ai đang chiếm 8089?"
+task_c8(){ cat <<EOF
+Service ${B}cka-app${N} cần cổng 8089 nhưng không khởi động được.
+Yêu cầu:
+  1. Tìm tiến trình đang chiếm cổng 8089 và dừng nó
+  2. cka-app chạy và 127.0.0.1:8089 trả về "cka-app OK"
+EOF
+}
+hint_c8(){ echo "journalctl -u cka-app -n 5 ; sudo ss -tlnp | grep 8089 → PID ; ps -o pid,cmd -p PID ; systemctl status PID cho biết unit nào chạy nó."; }
+setup_c8(){ need_systemd
+  local rogue="cka-rogue-$((RANDOM % 900 + 100))"; echo "$rogue" > "$STATE/c8.rogue"
+  $SUDO mkdir -p /opt/cka-app /opt/cka-rogue; echo "cka-app OK" | $SUDO tee /opt/cka-app/index.html >/dev/null
+  echo "hello" | $SUDO tee /opt/cka-rogue/index.html >/dev/null
+  $SUDO systemd-run --quiet --unit="$rogue" --description="cache helper" "$PY" -m http.server 8089 --bind 127.0.0.1 --directory /opt/cka-rogue
+  sleep 1
+  mkunit cka-app "[Unit]
+Description=CKA lab app
+StartLimitIntervalSec=0
+[Service]
+ExecStart=$PY -m http.server 8089 --bind 127.0.0.1 --directory /opt/cka-app
+Restart=on-failure
+RestartSec=3
+[Install]
+WantedBy=multi-user.target"
+  $SUDO systemctl enable --now cka-app >/dev/null 2>&1; true; }
+check_c8(){
+  t "Tiến trình chiếm cổng đã dừng" '! systemctl is-active --quiet "$(cat "$STATE/c8.rogue")"'
+  t "cka-app đang chạy" 'systemctl is-active --quiet cka-app'
+  t "127.0.0.1:8089 trả về cka-app OK" 'web http://127.0.0.1:8089/ | grep -q "cka-app OK"'; }
+reset_c8(){ rmunit cka-app; [ -f "$STATE/c8.rogue" ] && stop_transient "$(cat "$STATE/c8.rogue")"
+  $SUDO rm -rf /opt/cka-app /opt/cka-rogue; rm -f "$STATE/c8.rogue"; }
+
+title_c9="Phân giải tên sai (/etc/hosts)"
+task_c9(){ cat <<EOF
+Lệnh sau phải trả về "registry OK" nhưng đang bị treo/lỗi:
+    curl http://registry.cka.local:8090
+Yêu cầu: sửa phân giải tên để lệnh trên chạy đúng (máy chủ registry chạy ngay trên VM này).
+Không đổi lệnh curl, không dùng --resolve.
+EOF
+}
+hint_c9(){ echo "getent hosts registry.cka.local ; grep registry /etc/hosts ; sudo vim /etc/hosts — server nghe ở 127.0.0.1"; }
+setup_c9(){ need_systemd
+  $SUDO mkdir -p /opt/cka-c9; echo "registry OK" | $SUDO tee /opt/cka-c9/index.html >/dev/null
+  $SUDO systemd-run --quiet --unit=cka-c9-registry "$PY" -m http.server 8090 --bind 127.0.0.1 --directory /opt/cka-c9
+  $SUDO sed -i '/registry\.cka\.local/d' /etc/hosts
+  echo "10.255.255.1   registry.cka.local   # cka-lab c9" | $SUDO tee -a /etc/hosts >/dev/null; }
+check_c9(){
+  t "registry.cka.local phân giải về máy này" 'getent hosts registry.cka.local | head -1 | awk "{print \$1}" | grep -qE "^(127\.|::1$)"'
+  t "curl http://registry.cka.local:8090 trả về registry OK" 'web http://registry.cka.local:8090/ | grep -q "registry OK"'; }
+reset_c9(){ stop_transient cka-c9-registry; $SUDO sed -i '/registry\.cka\.local/d' /etc/hosts; $SUDO rm -rf /opt/cka-c9; }
+
+title_c10="Tiến trình ăn 100% CPU, bỏ qua SIGTERM"
+task_c10(){ cat <<EOF
+Một tiến trình đang chiếm 100% một nhân CPU.
+Yêu cầu:
+  1. Ghi TÊN tiến trình (cột COMMAND trong top) vào ~/cka-answers/c10.txt
+  2. Dừng tiến trình đó (nó cố tình bỏ qua SIGTERM)
+EOF
+}
+hint_c10(){ echo "top (nhấn P sắp theo CPU, q thoát) hoặc ps aux --sort=-%cpu | head ; kill PID không ăn → sudo kill -9 PID (SIGKILL không thể bị bỏ qua)"; }
+setup_c10(){
+  $SUDO mkdir -p "$LIB"
+  printf '#!/bin/bash\ntrap "" TERM INT HUP\nwhile :; do :; done\n' | $SUDO tee "$LIB/cka-hog" >/dev/null
+  $SUDO chmod 755 "$LIB/cka-hog"
+  $SUDO pkill -9 -x cka-hog 2>/dev/null
+  $SUDO bash -c "setsid nohup $LIB/cka-hog >/dev/null 2>&1 &"
+  rm -f "$ANS/c10.txt"; }
+check_c10(){
+  t "Tên tiến trình đúng" 'grep -qw "cka-hog" "$ANS/c10.txt"'
+  t "Tiến trình đã dừng" '! ps -eo stat=,comm= | awk "\$2==\"cka-hog\" && \$1 !~ /^Z/" | grep -q .'; }
+reset_c10(){ $SUDO pkill -9 -x cka-hog 2>/dev/null; $SUDO rm -f "$LIB/cka-hog"; rm -f "$ANS/c10.txt"; }
+
+title_c11="Khôi phục 1 file từ bản backup tar"
+task_c11(){ cat <<EOF
+File ${B}/etc/cka-c11/app.conf${N} bị hỏng. Có bản backup: /var/backups/cka-c11.tar.gz
+Yêu cầu: khôi phục ${B}chỉ app.conf${N} từ backup.
+KHÔNG được ghi đè /etc/cka-c11/db.conf (bản hiện tại mới hơn bản trong backup).
+EOF
+}
+hint_c11(){ echo "tar -tzf FILE để xem bên trong (đường dẫn không có dấu / đầu) ; sudo tar -xzf FILE -C / đường/dẫn/trong/archive"; }
+setup_c11(){
+  $SUDO rm -rf /etc/cka-c11; $SUDO mkdir -p /etc/cka-c11 /var/backups
+  printf 'mode=prod\nreplicas=3\nport=8080\n' | $SUDO tee /etc/cka-c11/app.conf >/dev/null
+  printf 'host=db1.cka.local\n' | $SUDO tee /etc/cka-c11/db.conf >/dev/null
+  $SUDO tar -czf /var/backups/cka-c11.tar.gz -C / etc/cka-c11
+  $SUDO sha256sum /etc/cka-c11/app.conf | cut -d' ' -f1 > "$STATE/c11.app"
+  printf 'host=db2.cka.local   # cập nhật sau backup\n' | $SUDO tee /etc/cka-c11/db.conf >/dev/null
+  $SUDO sha256sum /etc/cka-c11/db.conf | cut -d' ' -f1 > "$STATE/c11.db"
+  printf '@@@@ ##### corrupted ###\n' | $SUDO tee /etc/cka-c11/app.conf >/dev/null; }
+check_c11(){
+  t "app.conf đã được khôi phục" '[ "$($SUDO sha256sum /etc/cka-c11/app.conf | cut -d" " -f1)" = "$(cat "$STATE/c11.app")" ]'
+  t "db.conf giữ bản mới (không bị ghi đè)" '[ "$($SUDO sha256sum /etc/cka-c11/db.conf | cut -d" " -f1)" = "$(cat "$STATE/c11.db")" ]'; }
+reset_c11(){ $SUDO rm -rf /etc/cka-c11 /var/backups/cka-c11.tar.gz; rm -f "$STATE"/c11.*; }
+
+title_c12="Dọn file tạm bằng find (tên có dấu cách)"
+task_c12(){ cat <<EOF
+Trong ${B}~/cka-lab/c12${N} có rất nhiều file *.tmp ở mọi cấp thư mục, có file tên chứa dấu cách.
+Yêu cầu: xoá mọi FILE *.tmp. Giữ nguyên mọi file *.log và mọi thư mục (kể cả thư mục tên "*.tmp").
+EOF
+}
+hint_c12(){ echo "find DIR -type f -name '*.tmp' (xem trước) rồi thêm -delete ; hoặc -print0 | xargs -0 rm"; }
+setup_c12(){
+  local b="$LAB/c12"; rm -rf "$b"; mkdir -p "$b"/{a/b/c,"bao cao",cache.tmp,logs}
+  for d in "$b" "$b/a" "$b/a/b" "$b/a/b/c" "$b/bao cao" "$b/logs"; do
+    for i in 1 2 3 4 5; do echo x > "$d/file $i.tmp"; done
+    echo log > "$d/app.log"
+  done
+  echo log > "$b/cache.tmp/inside.log"; echo x > "$b/cache.tmp/real.tmp"; }
+check_c12(){
+  t "Không còn file *.tmp" '[ "$(find "$LAB/c12" -type f -name "*.tmp" | wc -l)" -eq 0 ]'
+  t "Đủ 7 file *.log" '[ "$(find "$LAB/c12" -type f -name "*.log" | wc -l)" -eq 7 ]'
+  t "Thư mục cache.tmp vẫn còn" '[ -d "$LAB/c12/cache.tmp" ]'; }
+reset_c12(){ rm -rf "$LAB/c12"; }
+
+title_c13="Agent crash loop do sai đường dẫn CA (giống kubelet)"
+task_c13(){ cat <<EOF
+Service ${B}cka-agent${N} (mô phỏng kubelet) khởi động lại liên tục.
+Yêu cầu: đọc log, sửa cấu hình để cka-agent chạy và 127.0.0.1:8093 trả về "agent OK".
+Không được tạo thêm file chứng chỉ mới; dùng chứng chỉ đã có trong /etc/cka-agent/pki/.
+EOF
+}
+hint_c13(){ echo "journalctl -u cka-agent -n 10 → đọc thông báo lỗi ; ls /etc/cka-agent/pki ; sudo vim /etc/cka-agent/config.yaml"; }
+setup_c13(){ need_systemd
+  $SUDO mkdir -p "$LIB" /etc/cka-agent/pki /etc/cka-agent/www
+  echo "-----BEGIN CERTIFICATE----- (lab) -----END CERTIFICATE-----" | $SUDO tee /etc/cka-agent/pki/ca.crt >/dev/null
+  echo "agent OK" | $SUDO tee /etc/cka-agent/www/index.html >/dev/null
+  printf 'port: 8093\nclientCAFile: /etc/cka-agent/pki/ca-sai.crt\nlogLevel: info\n' | $SUDO tee /etc/cka-agent/config.yaml >/dev/null
+  $SUDO tee "$LIB/cka-agent" >/dev/null <<SH
+#!/bin/bash
+CFG=/etc/cka-agent/config.yaml
+[ -r "\$CFG" ] || { echo "E: failed to load agent config file \$CFG" >&2; exit 1; }
+CA=\$(awk -F': *' '\$1=="clientCAFile"{print \$2}' "\$CFG")
+[ -f "\$CA" ] || { echo "E: unable to load client CA file \$CA: open \$CA: no such file or directory" >&2; exit 1; }
+PORT=\$(awk -F': *' '\$1=="port"{print \$2}' "\$CFG")
+echo "I: agent ready, CA=\$CA, listening on 127.0.0.1:\$PORT"
+exec $PY -m http.server "\$PORT" --bind 127.0.0.1 --directory /etc/cka-agent/www
+SH
+  $SUDO chmod 755 "$LIB/cka-agent"
+  mkunit cka-agent "[Unit]
+Description=CKA lab agent (giống kubelet)
+StartLimitIntervalSec=0
+[Service]
+ExecStart=$LIB/cka-agent
+Restart=always
+RestartSec=3
+[Install]
+WantedBy=multi-user.target"
+  $SUDO systemctl enable --now cka-agent >/dev/null 2>&1; true; }
+check_c13(){
+  t "Không tạo file ca-sai.crt" '[ ! -e /etc/cka-agent/pki/ca-sai.crt ]'
+  t "config trỏ tới /etc/cka-agent/pki/ca.crt" 'grep -Eq "^clientCAFile: */etc/cka-agent/pki/ca\.crt *$" /etc/cka-agent/config.yaml'
+  t "127.0.0.1:8093 trả về agent OK" 'sleep 1; web http://127.0.0.1:8093/ | grep -q "agent OK"'; }
+reset_c13(){ rmunit cka-agent; $SUDO rm -rf /etc/cka-agent "$LIB/cka-agent"; }
+
+title_c14="Lệnh không có trong PATH"
+task_c14(){ cat <<EOF
+Công cụ ${B}ckactl${N} đã được cài ở /opt/cka/bin nhưng gõ "ckactl" báo command not found.
+Yêu cầu:
+  1. Gõ "ckactl" chạy được trong MỌI shell mới của bạn
+     (không copy/link file vào /usr/bin, /usr/local/bin)
+  2. Ghi output của "ckactl version" vào ~/cka-answers/c14.txt
+EOF
+}
+hint_c14(){ echo "echo \$PATH ; echo 'export PATH=\$PATH:/opt/cka/bin' >> ~/.bashrc ; source ~/.bashrc"; }
+setup_c14(){
+  $SUDO mkdir -p /opt/cka/bin
+  printf '#!/bin/sh\n[ "$1" = version ] && echo "ckactl v1.35.0-lab" || echo "usage: ckactl version"\n' | $SUDO tee /opt/cka/bin/ckactl >/dev/null
+  $SUDO chmod 755 /opt/cka/bin/ckactl; rm -f "$ANS/c14.txt"; }
+check_c14(){
+  t "Shell mới tìm thấy ckactl ở /opt/cka/bin" '[ "$(bash -ic "command -v ckactl" 2>/dev/null | tail -1)" = /opt/cka/bin/ckactl ]'
+  t "Không copy/link vào /usr/bin, /usr/local/bin" '[ ! -e /usr/bin/ckactl ] && [ ! -e /usr/local/bin/ckactl ]'
+  t "c14.txt chứa output đúng" 'grep -q "ckactl v1.35.0-lab" "$ANS/c14.txt"'; }
+reset_c14(){ $SUDO rm -rf /opt/cka; rm -f "$ANS/c14.txt"; }
+
+title_c15="Service chạy bằng user nobody bị Permission denied"
+task_c15(){ cat <<EOF
+Service ${B}cka-proxy${N} (chạy bằng User=nobody) khởi động lại liên tục.
+Yêu cầu: sửa để cka-proxy chạy và 127.0.0.1:8091 trả về "proxy OK".
+Ràng buộc: KHÔNG đổi User=nobody, KHÔNG chmod 777 / cho mọi người quyền ghi.
+EOF
+}
+hint_c15(){ echo "journalctl -u cka-proxy -n 5 → Permission denied ở file nào? ls -l file đó. nobody cần quyền ĐỌC, không cần ghi."; }
+setup_c15(){ need_systemd
+  $SUDO mkdir -p /etc/cka-proxy/www; $SUDO chmod 755 /etc/cka-proxy /etc/cka-proxy/www
+  echo "proxy OK" | $SUDO tee /etc/cka-proxy/www/index.html >/dev/null; $SUDO chmod 644 /etc/cka-proxy/www/index.html
+  echo "upstream=127.0.0.1:8088" | $SUDO tee /etc/cka-proxy/proxy.conf >/dev/null
+  $SUDO chown root:root /etc/cka-proxy/proxy.conf; $SUDO chmod 600 /etc/cka-proxy/proxy.conf
+  mkunit cka-proxy "[Unit]
+Description=CKA lab proxy
+StartLimitIntervalSec=0
+[Service]
+User=nobody
+ExecStart=/bin/sh -c 'cat /etc/cka-proxy/proxy.conf >/dev/null && exec $PY -m http.server 8091 --bind 127.0.0.1 --directory /etc/cka-proxy/www'
+Restart=always
+RestartSec=3
+[Install]
+WantedBy=multi-user.target"
+  $SUDO systemctl enable --now cka-proxy >/dev/null 2>&1; true; }
+check_c15(){
+  t "Unit vẫn chạy bằng User=nobody" '[ "$(systemctl show -p User --value cka-proxy)" = nobody ]'
+  t "proxy.conf không cho người khác ghi" '[ $(( 0$(stat -c %a /etc/cka-proxy/proxy.conf) & 02 )) -eq 0 ]'
+  t "127.0.0.1:8091 trả về proxy OK" 'sleep 1; web http://127.0.0.1:8091/ | grep -q "proxy OK"'; }
+reset_c15(){ rmunit cka-proxy; $SUDO rm -rf /etc/cka-proxy; }
+
+# =====================================================================
+# Luyện vim tính giờ (v1–v8): sửa file ~/cka-vim/vN.yaml
+# =====================================================================
+vf(){ echo "$VIM/$1.yaml"; }
+has(){ grep -qxF -- "$2" "$(vf "$1")"; }
+
+title_v1="vim: thay toàn bộ image bằng 1 lệnh (≤45s)"; target_v1=45
+task_v1(){ echo "Mở ~/cka-vim/v1.yaml, đổi MỌI nginx:1.27 thành nginx:1.28 bằng một lệnh thay thế. Lưu, thoát."; }
+hint_v1(){ echo ":%s/1\\.27/1.28/g"; }
+setup_v1(){ cat > "$(vf v1)" <<'Y'
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+spec:
+  replicas: 3
+  selector:
+    matchLabels: {app: web}
+  template:
+    metadata:
+      labels: {app: web}
+    spec:
+      initContainers:
+      - name: init
+        image: nginx:1.27
+        command: ["nginx", "-t"]
+      containers:
+      - name: web
+        image: nginx:1.27
+      - name: metrics
+        image: nginx:1.27
+Y
+}
+check_v1(){ t "Còn 0 chỗ nginx:1.27" '! grep -q "nginx:1.27" "$(vf v1)"'; t "Có đúng 3 chỗ nginx:1.28" '[ "$(grep -c "image: nginx:1.28" "$(vf v1)")" -eq 3 ]'; }
+
+title_v2="vim: xoá các dòng thừa của --dry-run (≤60s)"; target_v2=60
+task_v2(){ echo "Xoá 4 dòng thừa trong ~/cka-vim/v2.yaml: 2 dòng creationTimestamp: null, dòng resources: {} và dòng status: {}."; }
+hint_v2(){ echo "/creation → dd → n → dd ... hoặc :g/creationTimestamp\\|resources: {}\\|status: {}/d"; }
+setup_v2(){ cat > "$(vf v2)" <<'Y'
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: api
+  name: api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: api
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: api
+    spec:
+      containers:
+      - image: nginx:1.27
+        name: nginx
+        resources: {}
+status: {}
+Y
+}
+check_v2(){ t "Không còn creationTimestamp / resources: {} / status: {}" '! grep -Eq "creationTimestamp|resources: \{\}|^status: \{\}" "$(vf v2)"'
+  t "Phần còn lại giữ nguyên (20 dòng, replicas: 2)" '[ "$(wc -l < "$(vf v2)")" -eq 20 ] && has v2 "  replicas: 2"'; }
+
+title_v3="vim: đổi tab thành dấu cách (≤45s)"; target_v3=45
+task_v3(){ echo "~/cka-vim/v3.yaml đang thụt lề bằng TAB (YAML không chấp nhận). Đổi mỗi tab thành 2 dấu cách."; }
+hint_v3(){ echo ":set expandtab tabstop=2 → :retab   (hoặc :%s/\\t/  /g)"; }
+setup_v3(){ printf 'apiVersion: v1\nkind: Pod\nmetadata:\n\tname: v3\nspec:\n\tcontainers:\n\t- name: web\n\t\timage: nginx\n\t\tports:\n\t\t- containerPort: 80\n' > "$(vf v3)"; }
+check_v3(){ t "Không còn ký tự tab" '! grep -qP "\t" "$(vf v3)"'
+  t "Thụt lề đúng 2 dấu cách mỗi cấp" 'has v3 "  name: v3" && has v3 "    image: nginx" && has v3 "    - containerPort: 80"'; }
+
+title_v4="vim: thụt lề một khối dòng (≤45s)"; target_v4=45
+task_v4(){ echo "Trong ~/cka-vim/v4.yaml, 4 dòng cuối (khối env) đang thiếu 2 dấu cách. Thụt chúng vào thêm 2 dấu cách."; }
+hint_v4(){ echo ":set sw=2 → đặt con trỏ dòng '- name: MODE' → V → 3j → >"; }
+setup_v4(){ cat > "$(vf v4)" <<'Y'
+apiVersion: v1
+kind: Pod
+metadata:
+  name: v4
+spec:
+  containers:
+  - name: app
+    image: busybox
+    command: ["sleep", "3600"]
+    env:
+  - name: MODE
+    value: prod
+  - name: LOG
+    value: info
+Y
+}
+check_v4(){ t "Khối env thụt đúng" 'has v4 "    - name: MODE" && has v4 "      value: prod" && has v4 "    - name: LOG" && has v4 "      value: info"'
+  t "Dòng container không bị đụng tới" 'has v4 "  - name: app"'; }
+
+title_v5="vim: nhân bản container thành sidecar (≤90s)"; target_v5=90
+task_v5(){ echo "Trong ~/cka-vim/v5.yaml thêm container thứ 2: name: sidecar, image: busybox, command: [\"sleep\", \"3600\"] (copy khối container có sẵn rồi sửa)."; }
+hint_v5(){ echo "Đứng ở '  - name: web' → V → j (chọn 2 dòng) → y → G → p → sửa bằng cw ; thêm dòng command bằng o"; }
+setup_v5(){ cat > "$(vf v5)" <<'Y'
+apiVersion: v1
+kind: Pod
+metadata:
+  name: v5
+spec:
+  containers:
+  - name: web
+    image: nginx:1.27
+Y
+}
+check_v5(){ t "Container web vẫn còn" 'has v5 "  - name: web" && has v5 "    image: nginx:1.27"'
+  t "Có container sidecar image busybox" 'has v5 "  - name: sidecar" && has v5 "    image: busybox"'
+  t "sidecar có lệnh sleep 3600" 'grep -Eq "^    (command|args):.*sleep.*3600" "$(vf v5)"'; }
+
+title_v6="vim: sửa replicas và thêm label 2 chỗ (≤90s)"; target_v6=90
+task_v6(){ echo "Trong ~/cka-vim/v6.yaml: đổi replicas thành 5; thêm label tier: backend vào CẢ metadata.labels và spec.template.metadata.labels."; }
+hint_v6(){ echo "/replicas → cw ; dưới mỗi dòng 'app: api' của labels: o → gõ 'tier: backend' đúng thụt lề"; }
+setup_v6(){ cat > "$(vf v6)" <<'Y'
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: api
+  name: api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api
+  template:
+    metadata:
+      labels:
+        app: api
+    spec:
+      containers:
+      - image: nginx
+        name: nginx
+Y
+}
+check_v6(){ t "replicas: 5" 'has v6 "  replicas: 5"'
+  t "metadata.labels có tier: backend" 'has v6 "    tier: backend"'
+  t "template labels có tier: backend" 'has v6 "        tier: backend"'; }
+
+title_v7="vim: bỏ comment một khối bằng Ctrl+V (≤45s)"; target_v7=45
+task_v7(){ echo "Trong ~/cka-vim/v7.yaml, bỏ comment khối resources (4 dòng bắt đầu bằng '# '), giữ đúng thụt lề."; }
+hint_v7(){ echo "Đặt con trỏ ở dấu # đầu tiên → Ctrl+V → 3j → l (chọn cả '# ') → d"; }
+setup_v7(){ cat > "$(vf v7)" <<'Y'
+apiVersion: v1
+kind: Pod
+metadata:
+  name: v7
+spec:
+  containers:
+  - name: app
+    image: nginx
+    # resources:
+    #   requests:
+    #     cpu: 100m
+    #     memory: 128Mi
+Y
+}
+check_v7(){ t "Khối resources đã bỏ comment, thụt lề đúng" 'has v7 "    resources:" && has v7 "      requests:" && has v7 "        cpu: 100m" && has v7 "        memory: 128Mi"'
+  t "Không còn dấu #" '! grep -q "#" "$(vf v7)"'; }
+
+title_v8="vim: sửa 2 lỗi trong manifest kube-apiserver (≤60s)"; target_v8=60
+task_v8(){ echo "~/cka-vim/v8.yaml là bản sao manifest kube-apiserver có 2 lỗi: sai cổng etcd và sai tên file cert. Tìm và sửa."; }
+hint_v8(){ echo "/etcd-servers → cổng etcd client là 2379 ; /tls-cert → tên file .crt"; }
+setup_v8(){ cat > "$(vf v8)" <<'Y'
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kube-apiserver
+  namespace: kube-system
+spec:
+  containers:
+  - command:
+    - kube-apiserver
+    - --advertise-address=192.168.64.5
+    - --authorization-mode=Node,RBAC
+    - --client-ca-file=/etc/kubernetes/pki/ca.crt
+    - --etcd-cafile=/etc/kubernetes/pki/etcd/ca.crt
+    - --etcd-servers=https://127.0.0.1:2380
+    - --secure-port=6443
+    - --service-cluster-ip-range=10.96.0.0/12
+    - --tls-cert-file=/etc/kubernetes/pki/apiserver.crtt
+    - --tls-private-key-file=/etc/kubernetes/pki/apiserver.key
+    image: registry.k8s.io/kube-apiserver:v1.35.0
+    name: kube-apiserver
+Y
+}
+check_v8(){ t "etcd-servers dùng cổng 2379" 'has v8 "    - --etcd-servers=https://127.0.0.1:2379"'
+  t "tls-cert-file đúng apiserver.crt" 'has v8 "    - --tls-cert-file=/etc/kubernetes/pki/apiserver.crt"'
+  t "Không sửa nhầm dòng khác" '[ "$(wc -l < "$(vf v8)")" -eq 20 ] && has v8 "    - --tls-private-key-file=/etc/kubernetes/pki/apiserver.key"'; }
+for v in v1 v2 v3 v4 v5 v6 v7 v8; do eval "reset_$v(){ rm -f \"\$(vf $v)\"; }"; done
+
+# =====================================================================
+ttl(){ local v="title_$1"; printf '%s' "${!v}"; }
+tgt(){ local v="target_$1"; printf '%s' "${!v:-}"; }
+valid(){ case " $IDS " in *" $1 "*) return 0;; esac; echo "Không có thử thách '$1'. Xem: cka-lab list"; exit 1; }
+status_of(){ if grep -qx "$1" "$STATE/passed" 2>/dev/null; then echo "${G}✔ đạt${N}"; elif [ -f "$STATE/$1.start" ]; then echo "${Y}… đang làm${N}"; else echo "-"; fi; }
+show_task(){ echo; echo "${B}${C}[$1] $(ttl "$1")${N}"; "task_$1"
+  case "$1" in v*) echo "File: ${B}$(vf "$1")${N}   → vim $(vf "$1")";; esac
+  echo; echo "Làm xong chạy: ${B}cka-lab check $1${N}   ·   gợi ý: cka-lab hint $1   ·   dọn: cka-lab reset $1"; }
+
+cmd="${1:-help}"; id="${2:-}"
+case "$cmd" in
+  list|ls)
+    echo "${B}cka-lab $VERSION${N} — thử thách Linux cho CKA"; echo
+    for i in $IDS; do printf "  %-4s %-62s %s\n" "$i" "$(ttl "$i")" "$(status_of "$i")"; done
+    echo; echo "Bắt đầu: cka-lab start c1" ;;
+  start)
+    [ -n "$id" ] || { echo "cka-lab start <id>"; exit 1; }; valid "$id"
+    case "$id" in c*) sudo -v || exit 1;; esac
+    "reset_$id" >/dev/null 2>&1; "setup_$id" || { echo "${R}Tạo thử thách thất bại${N}"; exit 1; }
+    date +%s > "$STATE/$id.start"; show_task "$id" ;;
+  task) valid "$id"; show_task "$id" ;;
+  hint) valid "$id"; echo "${Y}Gợi ý:${N} $("hint_$id")" ;;
+  check)
+    valid "$id"; [ -f "$STATE/$id.start" ] || { echo "Chưa bắt đầu. Chạy: cka-lab start $id"; exit 1; }
+    case "$id" in c*) sudo -v || exit 1;; esac
+    echo "${B}Chấm [$id] $(ttl "$id")${N}"; "check_$id"
+    el=$(( $(date +%s) - $(cat "$STATE/$id.start") )); tg="$(tgt "$id")"
+    if [ "$FAIL" -eq 0 ]; then
+      grep -qx "$id" "$STATE/passed" 2>/dev/null || echo "$id" >> "$STATE/passed"
+      msg="${G}${B}ĐẠT${N} ($PASS/$PASS) — thời gian $((el/60))m$((el%60))s"
+      [ -n "$tg" ] && { [ "$el" -le "$tg" ] && msg="$msg ${G}(trong mục tiêu ${tg}s)${N}" || msg="$msg ${Y}(mục tiêu ${tg}s — làm lại cho nhanh hơn)${N}"; }
+      echo; echo "$msg"; echo "Dọn dẹp: cka-lab reset $id"
+    else echo; echo "${R}${B}CHƯA ĐẠT${N} ($PASS/$((PASS+FAIL))). Gợi ý: cka-lab hint $id"; exit 2; fi ;;
+  reset)
+    [ -n "$id" ] || { echo "cka-lab reset <id|all>"; exit 1; }
+    if [ "$id" = all ]; then sudo -v || exit 1; for i in $IDS; do "reset_$i" >/dev/null 2>&1; rm -f "$STATE/$i.start"; done; echo "Đã dọn toàn bộ tài nguyên cka-lab."
+    else valid "$id"; case "$id" in c*) sudo -v || exit 1;; esac; "reset_$id" >/dev/null 2>&1; rm -f "$STATE/$id.start"; echo "Đã dọn [$id]."; fi ;;
+  score)
+    n=$(grep -c . "$STATE/passed" 2>/dev/null || echo 0); tot=$(echo $IDS | wc -w)
+    echo "Đã đạt ${B}$n/$tot${N}: $(tr '\n' ' ' < "$STATE/passed" 2>/dev/null)" ;;
+  version) echo "$VERSION" ;;
+  *) sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//' ;;
+esac
