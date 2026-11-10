@@ -106,6 +106,57 @@ td code{white-space:nowrap}
 .wkhead{margin:4px 0 12px}
 .wkhead h2{margin:0}
 .golink{display:inline-block;margin-top:8px;font-weight:600;font-size:13px;text-decoration:none}
+/* ---- terminal dock ---- */
+.tbtn{position:fixed;right:14px;bottom:14px;z-index:30;background:var(--acc);color:#04201b;border:0;border-radius:999px;padding:11px 16px;font:700 14px var(--sans);box-shadow:0 6px 20px rgba(0,0,0,.4);cursor:pointer}
+body.term-open .tbtn{display:none}
+#dock{position:fixed;z-index:25;background:#0b0f13;border-top:1px solid var(--line);display:none;flex-direction:column;left:0;right:0;bottom:0;height:var(--dockh,52vh)}
+body.term-open #dock{display:flex}
+body.term-open main,body.term-open header,body.term-open footer{padding-bottom:calc(var(--dockh,52vh) + 16px)}
+#dock .bar{display:flex;gap:6px;align-items:center;padding:6px 8px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+#dock .bar b{font:700 12px var(--mono);color:var(--acc);margin-right:4px}
+#dock .bar input{flex:1;min-width:140px;background:#0b0f13;border:1px solid var(--line);color:var(--text);border-radius:6px;padding:6px 8px;font:12px var(--mono)}
+#dock .bar .btn{padding:5px 9px;font-size:12px}
+#dock .stage{flex:1;position:relative}
+#dock iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000}
+#dock .help{position:absolute;inset:0;overflow:auto;padding:14px;font-size:13.5px}
+#dock .help ol{padding-left:20px}#dock .help li{margin:4px 0}
+#dock .grip{height:6px;cursor:ns-resize;background:var(--line)}
+@media(min-width:1100px){
+ #dock{left:auto;top:0;bottom:0;right:0;height:auto;width:var(--dockw,48vw);border-top:0;border-left:1px solid var(--line);flex-direction:row}
+ #dock .grip{width:6px;height:auto;cursor:ew-resize}
+ #dock .col{flex:1;display:flex;flex-direction:column;min-width:0}
+ body.term-open main,body.term-open header,body.term-open footer,body.term-open nav .in{padding-bottom:16px;margin-left:0;margin-right:var(--dockw,48vw);max-width:none}
+ body.term-open main{padding-left:20px;padding-right:20px}
+ body.term-open nav{right:var(--dockw,48vw)}
+}
+@media(max-width:1099px){#dock .col{flex:1;display:flex;flex-direction:column;min-height:0}}
+#exam{display:none;position:fixed;z-index:20;left:0;top:0;right:0;bottom:var(--dockh,52vh);background:var(--bg);flex-direction:column}
+body.exam-mode #exam{display:flex}
+body.exam-mode header,body.exam-mode nav,body.exam-mode main,body.exam-mode footer,body.exam-mode .tbtn,body.exam-mode #tClose{display:none!important}
+.ebar{display:flex;gap:10px;align-items:center;padding:8px 12px;background:var(--panel);border-bottom:1px solid var(--line)}
+.ebar b{font-size:14px}
+.etimer{font:700 16px var(--mono);background:#0b0f13;border:1px solid var(--line);border-radius:6px;padding:3px 10px}
+.etimer.low{color:var(--bad);border-color:var(--bad)}
+.enav{display:flex;gap:5px;overflow-x:auto;padding:8px 12px;border-bottom:1px solid var(--line);scrollbar-width:thin}
+.qn{flex:none;width:34px;height:30px;border-radius:6px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font:600 13px var(--mono);cursor:pointer;position:relative}
+.qn.done{background:#173826;border-color:var(--ok);color:var(--ok)}
+.qn.flag::after{content:'⚑';position:absolute;top:-7px;right:-4px;font-size:11px;color:var(--warn)}
+.qn.cur{outline:2px solid var(--acc2);outline-offset:1px}
+.ebody{flex:1;overflow:auto;padding:16px 18px}
+.eqh{font-size:20px;font-weight:700}
+.ectx{font-size:12.5px;color:var(--mute);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-bottom:12px}
+.eq{font-size:16px;line-height:1.65;white-space:pre-wrap}
+.esol{margin-top:16px}.esol summary{cursor:pointer;color:var(--acc);font-weight:600}
+.efoot{display:flex;gap:6px;padding:8px 12px;border-top:1px solid var(--line);background:var(--panel);flex-wrap:wrap}
+.efoot .btn{flex:1;min-width:90px}
+.btn:disabled{opacity:.4;cursor:default}
+.tag{font-family:var(--sans)}
+@media(max-width:700px){.efoot{gap:4px;padding:6px}.efoot .btn{min-width:0;padding:6px 4px;font-size:12px}.ebar{gap:6px;padding:6px 8px}.ebar b{font-size:12px}.ebar .btn{padding:5px 8px;font-size:12px}.etimer{font-size:14px}.ebody{padding:12px}.eqh{font-size:17px}.eq{font-size:15px}.ectx{display:none}}
+@media(min-width:1100px){#exam{bottom:0;right:var(--dockw,48vw)}}
+pre{position:relative}
+.cp{position:absolute;top:6px;right:6px;background:var(--panel2);color:var(--mute);border:1px solid var(--line);border-radius:6px;font:600 11px var(--sans);padding:3px 8px;cursor:pointer;opacity:.85}
+.cp:hover{color:var(--text)}.cp.ok{color:var(--ok);border-color:var(--ok)}
+.termlink{font-size:12px;padding:4px 10px}
 footer{max-width:960px;margin:0 auto;padding:12px 16px 40px;color:var(--mute);font-size:12px}
 </style>
 </head>
@@ -124,6 +175,7 @@ footer{max-width:960px;margin:0 auto;padding:12px 16px 40px;color:var(--mute);fo
   <a href="#flashcard">Flashcard</a>
   <a href="#cheatsheet">Cheatsheet</a>
   <a href="#thi-thu">Thi thử</a>
+  <a href="#phong-thi">⌨ Phòng thi</a>
 </div></nav>
 
 <main>
@@ -301,11 +353,11 @@ k auth can-i create pods --as=system:serviceaccount:dev:sa1 -n dev</pre></div>
 <section id="thi-thu">
   <h2>Thi thử 2 giờ</h2>
   <div class="card">
-    <p class="small muted" style="margin-top:0">Lấy ngẫu nhiên 16 bài lab, phân bổ theo trọng số đề thật. Đặt đồng hồ, làm trên cluster của bạn, tự chấm khi xong.</p>
+    <p class="small muted" style="margin-top:0">16 câu ngẫu nhiên phân bổ theo trọng số đề thật. Phòng thi giống đề thật: đề bên trái, terminal VM bên phải, đồng hồ 2 giờ, đánh dấu câu xem lại. Nộp bài hoặc hết giờ mới hiện lời giải.</p>
     <div class="timer" id="timer">2:00:00</div>
     <div class="row">
-      <button class="btn pri" id="mkNew">Tạo đề mới</button>
-      <button class="btn" id="mkStart">Bắt đầu</button>
+      <button class="btn pri" id="mkStart">▶ Vào phòng thi</button>
+      <button class="btn" id="mkNew">Tạo đề mới</button>
       <button class="btn" id="mkPause">Tạm dừng</button>
     </div>
     <div class="score" id="mkScore" style="margin-top:10px"></div>
@@ -313,6 +365,53 @@ k auth can-i create pods --as=system:serviceaccount:dev:sa1 -n dev</pre></div>
   <div class="card mocklist" id="mkList"><p class="muted small" style="margin:0">Bấm “Tạo đề mới”.</p></div>
 </section>
 </main>
+<div id="exam">
+ <div class="ebar">
+  <b id="eTitle">CKA</b>
+  <span class="etimer" id="eTimer">2:00:00</span>
+  <span id="eScore" class="small"></span>
+  <span style="flex:1"></span>
+  <button class="btn" id="eSubmit">Nộp bài</button>
+  <button class="btn" id="eExit">Thoát</button>
+ </div>
+ <div class="enav" id="eNav"></div>
+ <div class="ebody" id="eBody"></div>
+ <div class="efoot">
+  <button class="btn" id="ePrev">← Trước</button>
+  <button class="btn" id="eFlag">⚑ Xem lại sau</button>
+  <button class="btn pri" id="eDone">Đánh dấu đã làm</button>
+  <button class="btn" id="eNext">Sau →</button>
+ </div>
+</div>
+<button class="tbtn" id="tOpen">⌨ Terminal</button>
+<div id="dock" aria-label="Terminal">
+ <div class="grip" id="tGrip" title="Kéo để đổi kích thước"></div>
+ <div class="col">
+  <div class="bar">
+   <b>⌨ VM</b>
+   <input id="tUrl" spellcheck="false" aria-label="Địa chỉ web terminal">
+   <button class="btn pri" id="tGo">Kết nối</button>
+   <button class="btn" id="tHelp">?</button>
+   <a class="btn" id="tNew" target="_blank" rel="noopener" style="text-decoration:none">↗</a>
+   <button class="btn" id="tClose" title="Ẩn (phiên vẫn giữ)">✕</button>
+  </div>
+  <div class="stage">
+   <iframe id="tFrame" title="Terminal" allow="clipboard-read; clipboard-write"></iframe>
+   <div class="help" id="tHelpBox">
+    <b>Kết nối terminal của VM vào trang này</b>
+    <ol>
+     <li>SSH vào VM: <code>ssh namhv25@192.168.64.5</code></li>
+     <li>Chạy script cài web terminal (ttyd) trong repo:<pre id="tCmd">curl -fsSL https://raw.githubusercontent.com/namptit02/cka-8-tuan/main/scripts/setup-web-terminal.sh | bash</pre>
+      (Repo private thì copy file <code>scripts/setup-web-terminal.sh</code> sang VM rồi chạy <code>bash setup-web-terminal.sh</code>.)</li>
+     <li>Mở <a id="tAccept" target="_blank" rel="noopener">địa chỉ terminal</a> trong tab mới <b>một lần</b>, chọn “Nâng cao → Tiếp tục” để chấp nhận chứng chỉ tự ký, rồi quay lại đây.</li>
+     <li>Bấm <b>Kết nối</b>. Nếu Chrome hỏi quyền truy cập thiết bị trong mạng cục bộ, chọn Cho phép.</li>
+    </ol>
+    <p class="muted">Mẹo: mỗi khối lệnh trên trang có nút <b>Copy</b>, dán vào terminal bằng <code>Ctrl+Shift+V</code> (Mac: <code>⌘V</code>). Màn rộng: terminal nằm bên phải, kéo mép trái để đổi độ rộng. Bấm ✕ chỉ ẩn khung, phiên không mất.</p>
+    <p class="muted">Terminal chỉ chạy được khi máy bạn đang thấy VM (cùng máy Mac / cùng mạng). Bản xem trên claude.ai không cho nhúng terminal; dùng bản Vercel.</p>
+   </div>
+  </div>
+ </div>
+</div>
 <footer>Trang ôn tập cá nhân. Nội dung bám theo đề cương CKA hiện hành (5 domain); kiểm tra lại trang chính thức của Linux Foundation gần ngày thi.</footer>
 
 <script>
@@ -664,7 +763,7 @@ function renderLabs(){
  document.getElementById('labs').innerHTML=LABS.map((l,i)=>({l,i})).filter(o=>labFilter==='all'||o.l.d===labFilter).map(({l,i})=>`
  <div class="card lab ${state.labs[i]?'done':''}">
   <div class="head"><span class="tag ${DOM[l.d].t}">${DOM[l.d].s}</span>
-  <button class="btn donebtn ${state.labs[i]?'on':''}" data-l="${i}">${state.labs[i]?'✓ Đã làm':'Đánh dấu xong'}</button></div>
+  <span><button class="btn termlink" data-practice="${i}">⌨ Làm bài</button> <button class="btn donebtn ${state.labs[i]?'on':''}" data-l="${i}">${state.labs[i]?'✓ Đã làm':'Đánh dấu xong'}</button></span></div>
   <div class="q">${esc(l.q)}</div>
   <details><summary>Xem lời giải</summary><pre>${esc(l.a)}</pre></details>
  </div>`).join('');
@@ -751,29 +850,86 @@ document.getElementById('cheatTbl').innerHTML='<tr><th>Tạo</th><th>Lệnh</th>
 
 /* ---------- MOCK ---------- */
 let mock=store.get('mock',null),timerId=null;
+if(mock&&!mock.flag)mock.flag=[];
+const QUOTA={ts:5,arch:4,net:3,work:2,sto:2};
 function pick(){
- const quota={ts:5,arch:4,net:3,work:2,sto:2};let sel=[];
- for(const k in quota){const pool=LABS.map((l,i)=>i).filter(i=>LABS[i].d===k).sort(()=>Math.random()-.5);sel=sel.concat(pool.slice(0,quota[k]))}
+ let sel=[];
+ for(const k in QUOTA){const pool=LABS.map((l,i)=>i).filter(i=>LABS[i].d===k).sort(()=>Math.random()-.5);sel=sel.concat(pool.slice(0,QUOTA[k]))}
  return sel.sort(()=>Math.random()-.5);
 }
+function qWeight(id){const d=LABS[id].d;return QUOTA[d]?DOM[d].w/QUOTA[d]:0}
+function mockScore(){if(!mock)return 0;return mock.ids.reduce((a,id,n)=>a+(mock.ok[n]?qWeight(id):0),0)}
+function newMock(){stop();mock={ids:pick(),ok:[],flag:[],left:7200,fin:false};store.set('mock',mock)}
 function fmt(s){const h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return `${h}:${String(m).padStart(2,'0')}:${String(x).padStart(2,'0')}`}
+function updTimers(){const v=mock?fmt(mock.left):'2:00:00',low=mock&&mock.left<900;
+ ['timer','eTimer'].forEach(id=>{const t=document.getElementById(id);if(t){t.textContent=v;t.classList.toggle('low',!!low)}})}
 function renderMock(){
- const t=document.getElementById('timer');
- if(!mock){t.textContent='2:00:00';return}
- t.textContent=fmt(mock.left);t.classList.toggle('low',mock.left<900);
+ updTimers();
+ if(!mock){document.getElementById('mkList').innerHTML='<p class="muted small" style="margin:0">Bấm “Vào phòng thi” để tạo đề và bắt đầu.</p>';document.getElementById('mkScore').innerHTML='';return}
+ const showSol=mock.fin||mock.left===0;
  document.getElementById('mkList').innerHTML=mock.ids.map((id,n)=>{const l=LABS[id];
-  return `<div class="item"><span class="n">${n+1}</span><div style="flex:1"><span class="tag ${DOM[l.d].t}">${DOM[l.d].s}</span><div class="small" style="margin-top:4px">${esc(l.q)}</div>
-  ${mock.left===0?`<details><summary>Lời giải</summary><pre>${esc(l.a)}</pre></details>`:''}</div>
+  return `<div class="item"><span class="n">${n+1}</span><div style="flex:1"><span class="tag ${DOM[l.d].t}">${DOM[l.d].s}</span> <span class="tag">${qWeight(id).toFixed(1)}%</span>${mock.flag[n]?' <span class="tag" style="color:var(--warn)">⚑</span>':''}
+  <div class="small" style="margin-top:4px">${esc(l.q)}</div>
+  ${showSol?`<details><summary>Lời giải</summary><pre>${esc(l.a)}</pre></details>`:''}</div>
   <input type="checkbox" data-m="${n}" ${mock.ok[n]?'checked':''} style="accent-color:var(--acc);width:20px;height:20px;flex:none" aria-label="Làm đúng"></div>`}).join('');
- const ok=mock.ok.filter(Boolean).length,pct=Math.round(ok/mock.ids.length*100);
- document.getElementById('mkScore').innerHTML=`Tự chấm: ${ok}/${mock.ids.length} = <span style="color:${pct>=66?'var(--ok)':'var(--bad)'}">${pct}%</span> ${pct>=66?'· ĐỖ':'· cần ≥ 66%'}`;
+ const pct=Math.round(mockScore());
+ document.getElementById('mkScore').innerHTML=`Tự chấm: <span style="color:${pct>=66?'var(--ok)':'var(--bad)'}">${pct}%</span> ${pct>=66?'· ĐỖ':'· cần ≥ 66%'} <span class="muted small">(${mock.ok.filter(Boolean).length}/${mock.ids.length} câu)</span>`;
 }
-function tick(){if(!mock)return;mock.left=Math.max(0,mock.left-1);if(mock.left%10===0)store.set('mock',mock);if(mock.left===0){stop();renderMock()}else{const t=document.getElementById('timer');t.textContent=fmt(mock.left);t.classList.toggle('low',mock.left<900)}}
-function stop(){clearInterval(timerId);timerId=null;store.set('mock',mock)}
-document.getElementById('mkNew').onclick=()=>{stop();mock={ids:pick(),ok:[],left:7200};store.set('mock',mock);renderMock()};
-document.getElementById('mkStart').onclick=()=>{if(!mock){mock={ids:pick(),ok:[],left:7200};renderMock()}if(!timerId&&mock.left>0)timerId=setInterval(tick,1000)};
+function tick(){if(!mock)return;mock.left=Math.max(0,mock.left-1);if(mock.left%10===0)store.set('mock',mock);
+ if(mock.left===0){mock.fin=true;stop();renderMock();if(EX.mode==='mock')renderExam()}else updTimers()}
+function start(){if(mock&&!timerId&&mock.left>0&&!mock.fin)timerId=setInterval(tick,1000)}
+function stop(){clearInterval(timerId);timerId=null;if(mock)store.set('mock',mock)}
+document.getElementById('mkNew').onclick=()=>{newMock();renderMock()};
+document.getElementById('mkStart').onclick=()=>{if(!mock||mock.fin||mock.left===0)newMock();openExam('mock',0)};
 document.getElementById('mkPause').onclick=stop;
 document.getElementById('mkList').addEventListener('change',e=>{const n=e.target.dataset.m;if(n==null||!mock)return;mock.ok[n]=e.target.checked;store.set('mock',mock);renderMock()});
+
+/* ---------- PHÒNG THI (đề trái, terminal phải) ---------- */
+const EX={mode:null,ids:[],cur:0};
+function openExam(mode,cur,ids){
+ EX.mode=mode;EX.cur=cur||0;EX.ids=mode==='mock'?mock.ids:(ids||LABS.map((_,i)=>i));
+ store.set('ex',{mode:EX.mode,cur:EX.cur,ids:EX.ids});
+ if(mode==='mock')start();
+ if(location.hash!=='#phong-thi')location.hash='phong-thi';else route();
+}
+function exDone(n){return EX.mode==='mock'?!!mock.ok[n]:!!state.labs[EX.ids[n]]}
+function exFlag(n){return EX.mode==='mock'?!!mock.flag[n]:!!(state.flag||{})[EX.ids[n]]}
+function renderExam(){
+ if(!EX.mode)return;
+ const isMock=EX.mode==='mock',id=EX.ids[EX.cur],l=LABS[id],n=EX.cur,showSol=!isMock||mock.fin||mock.left===0;
+ document.getElementById('eTitle').textContent=isMock?'CKA · Thi thử':'Luyện lab';
+ document.getElementById('eTimer').style.display=isMock?'':'none';
+ document.getElementById('eSubmit').style.display=isMock&&!mock.fin&&mock.left>0?'':'none';
+ document.getElementById('eScore').innerHTML=isMock&&(mock.fin||mock.left===0)?`Điểm: <b style="color:${mockScore()>=66?'var(--ok)':'var(--bad)'}">${Math.round(mockScore())}%</b>`:'';
+ document.getElementById('eNav').innerHTML=EX.ids.map((_,k)=>`<button class="qn ${k===n?'cur':''} ${exDone(k)?'done':''} ${exFlag(k)?'flag':''}" data-q="${k}">${k+1}</button>`).join('');
+ const cur=document.querySelector('#eNav .qn.cur');if(cur)cur.scrollIntoView({block:'nearest',inline:'center'});
+ document.getElementById('eBody').innerHTML=`
+  <div class="eqh">Câu ${n+1}<span class="muted"> / ${EX.ids.length}</span></div>
+  <div style="margin:6px 0 12px"><span class="tag ${DOM[l.d].t}">${DOM[l.d].s}</span>${isMock?` <span class="tag">Trọng số ${qWeight(id).toFixed(1)}%</span>`:''}</div>
+  <div class="ectx">Làm trên cluster lab của bạn. Đề thật: chạy lệnh <code>ssh</code>/<code>kubectl config use-context</code> ghi ở đầu câu trước khi làm.</div>
+  <div class="eq">${esc(l.q)}</div>
+  ${showSol?`<details class="esol"><summary>Xem lời giải</summary><pre>${esc(l.a)}</pre></details>`:'<p class="muted small">Lời giải hiện sau khi nộp bài hoặc hết giờ.</p>'}`;
+ const d=document.getElementById('eDone');d.textContent=exDone(n)?'✓ Đã làm':'Đánh dấu đã làm';d.classList.toggle('pri',!exDone(n));
+ const f=document.getElementById('eFlag');f.textContent=exFlag(n)?'⚑ Bỏ đánh dấu':'⚑ Xem lại sau';
+ document.getElementById('ePrev').disabled=n===0;document.getElementById('eNext').disabled=n===EX.ids.length-1;
+ updTimers();
+}
+document.getElementById('eNav').addEventListener('click',e=>{const b=e.target.closest('[data-q]');if(!b)return;EX.cur=+b.dataset.q;store.set('ex',{...EX});renderExam()});
+document.getElementById('ePrev').onclick=()=>{if(EX.cur>0){EX.cur--;store.set('ex',{...EX});renderExam()}};
+document.getElementById('eNext').onclick=()=>{if(EX.cur<EX.ids.length-1){EX.cur++;store.set('ex',{...EX});renderExam()}};
+document.getElementById('eDone').onclick=()=>{const n=EX.cur;
+ if(EX.mode==='mock'){mock.ok[n]=!mock.ok[n];store.set('mock',mock);renderMock()}else{const id=EX.ids[n];state.labs[id]=!state.labs[id];save();renderLabs()}
+ renderExam()};
+document.getElementById('eFlag').onclick=()=>{const n=EX.cur;
+ if(EX.mode==='mock'){mock.flag[n]=!mock.flag[n];store.set('mock',mock)}else{state.flag=state.flag||{};const id=EX.ids[n];state.flag[id]=!state.flag[id];save()}
+ renderExam()};
+document.getElementById('eSubmit').onclick=()=>{const b=document.getElementById('eSubmit');
+ if(b.dataset.c!=='1'){b.dataset.c='1';b.textContent='Chắc chắn nộp?';setTimeout(()=>{b.dataset.c='';b.textContent='Nộp bài'},3000);return}
+ mock.fin=true;stop();renderMock();renderExam()};
+document.getElementById('eExit').onclick=()=>{location.hash=EX.mode==='mock'?'thi-thu':'lab'};
+document.getElementById('labs').addEventListener('click',e=>{const b=e.target.closest('[data-practice]');if(!b)return;
+ const ids=LABS.map((l,i)=>i).filter(i=>labFilter==='all'||LABS[i].d===labFilter);openExam('practice',ids.indexOf(+b.dataset.practice),ids)});
+(function(){const x=store.get('ex',null);if(x&&x.mode&&(x.mode!=='mock'||mock)){EX.mode=x.mode;EX.cur=x.cur||0;EX.ids=x.mode==='mock'?mock.ids:x.ids}})();
 
 /* ---------- LESSONS ---------- */
 let curWeek=store.get('week',1);
@@ -789,7 +945,7 @@ function renderWeek(){
  document.getElementById('lessonList').innerHTML=list.map(({l,i},k)=>`
   <details class="card lesson ${state.les[i]?'done':''}" data-i="${i}">
    <summary><span class="num">${wk}.${k+1}</span><span class="tt">${esc(l.t)}</span><span class="meta">${l.n} BT</span><span class="ck">${state.les[i]?'✓':''}</span></summary>
-   <div class="lbody">${l.h}
+   <div class="lbody"><div style="text-align:right;margin-top:8px"><button class="btn termlink" data-term>⌨ Mở terminal để làm bài</button></div>${l.h}
     <button class="btn ldone ${state.les[i]?'':'pri'}" data-done="${i}">${state.les[i]?'✓ Đã học xong · bấm để bỏ đánh dấu':'Đánh dấu đã học xong bài này'}</button>
    </div></details>`).join('');
  document.getElementById('weekNav').innerHTML=(wk>1?`<a class="btn" style="text-decoration:none" href="#tuan-${wk-1}">← Tuần ${wk-1}</a>`:'')+(wk<8?`<a class="btn pri" style="text-decoration:none" href="#tuan-${wk+1}">Tuần ${wk+1} →</a>`:'');
@@ -803,6 +959,39 @@ document.getElementById('lessonList').addEventListener('click',e=>{
  else if(openIdx!=null){const d=document.querySelector(`.lesson[data-i="${i}"]`);if(d)d.open=true}
 });
 
+/* ---------- TERMINAL DOCK ---------- */
+const T={url:store.get('turl','https://192.168.64.5:7681'),loaded:false};
+const $=id=>document.getElementById(id);
+function tSync(){$('tUrl').value=T.url;$('tNew').href=T.url;$('tAccept').href=T.url;$('tAccept').textContent=T.url}
+function tConnect(){T.url=$('tUrl').value.trim()||T.url;store.set('turl',T.url);tSync();$('tFrame').src=T.url;T.loaded=true;$('tHelpBox').style.display='none'}
+function tOpen(){document.body.classList.add('term-open');store.set('topen',true);if(!T.loaded&&store.get('tok',false))tConnect()}
+function tClose(){document.body.classList.remove('term-open');store.set('topen',false)}
+$('tOpen').onclick=tOpen;$('tClose').onclick=tClose;
+$('tGo').onclick=()=>{store.set('tok',true);tConnect()};
+$('tUrl').addEventListener('keydown',e=>{if(e.key==='Enter'){store.set('tok',true);tConnect()}});
+$('tHelp').onclick=()=>{const h=$('tHelpBox');h.style.display=h.style.display==='none'?'block':'none'};
+(function(){let drag=false;const g=$('tGrip');
+ g.addEventListener('pointerdown',e=>{drag=true;g.setPointerCapture(e.pointerId);$('tFrame').style.pointerEvents='none'});
+ g.addEventListener('pointermove',e=>{if(!drag)return;
+  if(innerWidth>=1100){const w=Math.min(Math.max(innerWidth-e.clientX,320),innerWidth-360);document.documentElement.style.setProperty('--dockw',w+'px');store.set('tw',w)}
+  else{const h=Math.min(Math.max(innerHeight-e.clientY,160),innerHeight-160);document.documentElement.style.setProperty('--dockh',h+'px')}});
+ g.addEventListener('pointerup',()=>{drag=false;$('tFrame').style.pointerEvents=''});
+ const w=store.get('tw',0);if(w)document.documentElement.style.setProperty('--dockw',w+'px');})();
+tSync();if(store.get('topen',false))tOpen();
+try{if(/^https?:$/.test(location.protocol)&&!/claude/.test(location.hostname)&&location.hostname!=='localhost')$('tCmd').textContent=`curl -fsSL ${location.origin}/scripts/setup-web-terminal.sh | bash`}catch(e){}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-term]');if(b){e.preventDefault();tOpen()}});
+
+/* ---------- COPY BUTTONS ---------- */
+function addCopy(root){(root||document).querySelectorAll('pre').forEach(p=>{if(p.querySelector('.cp'))return;
+ const b=document.createElement('button');b.className='cp';b.type='button';b.textContent='Copy';p.appendChild(b)})}
+document.addEventListener('click',async e=>{const b=e.target.closest('.cp');if(!b)return;e.preventDefault();e.stopPropagation();
+ const pre=b.parentElement,txt=[...pre.childNodes].filter(n=>n!==b).map(n=>n.textContent).join('').replace(/\n$/,'');
+ try{await navigator.clipboard.writeText(txt);b.textContent='Đã copy';b.classList.add('ok')}
+ catch(err){const r=document.createRange();r.selectNodeContents(pre.firstChild&&pre.firstChild!==b?pre:pre);const sel=getSelection();sel.removeAllRanges();sel.addRange(r);b.textContent='Đã chọn, Ctrl+C'}
+ setTimeout(()=>{b.textContent='Copy';b.classList.remove('ok')},1500)});
+new MutationObserver(()=>addCopy()).observe(document.querySelector('main'),{childList:true,subtree:true});
+addCopy();
+
 /* ---------- PROGRESS & ROUTING ---------- */
 function updateProgress(){
  const tp=WEEKS.reduce((a,w)=>a+w.items.length,0),dp=Object.values(state.plan).filter(Boolean).length;
@@ -811,11 +1000,15 @@ function updateProgress(){
  document.getElementById('pbar').style.width=pct+'%';
  document.getElementById('ptext').textContent=`Tiến độ ${pct}% · bài học ${dle}/${LESSONS.length} · lộ trình ${dp}/${tp} · lab ${dl}/${LABS.length}`;
 }
-const ROUTES=['lo-trinh','bai-hoc','nen-tang','lab','flashcard','cheatsheet','thi-thu'];
+const ROUTES=['phong-thi','lo-trinh','bai-hoc','nen-tang','lab','flashcard','cheatsheet','thi-thu'];
 function route(){
  let h=location.hash.slice(1);const m=h.match(/^tuan-([1-8])$/);
  if(m){curWeek=+m[1];store.set('week',curWeek);h='bai-hoc'}
  if(h==='bai-hoc')renderWeek();
+ if(h==='phong-thi'){
+  if(!EX.mode){if(mock&&!mock.fin&&mock.left>0){EX.mode='mock';EX.ids=mock.ids;EX.cur=0}else{EX.mode='practice';EX.ids=LABS.map((_,i)=>i);EX.cur=0}}
+  document.body.classList.add('exam-mode');document.body.classList.add('term-open');if(!T.loaded&&store.get('tok',false))tConnect();renderExam();return}
+ document.body.classList.remove('exam-mode');if(!store.get('topen',false))document.body.classList.remove('term-open');
  const cur=ROUTES.includes(h)?h:'lo-trinh';
  document.querySelectorAll('section').forEach(s=>s.classList.toggle('on',s.id===cur));
  document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+cur));
